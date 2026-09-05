@@ -232,3 +232,27 @@ a.tok{color:inherit}
 .col-head a{color:var(--gold2);text-decoration:underline}
 .row2{display:flex;gap:12px;margin-top:12px}
 .mini{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--mut);margin-top:14px}
+
+/* ---------- explore controls / stats / activity ---------- */
+.sub .stats{margin-top:0;margin-bottom:6px}
+.stats.three{grid-template-columns:repeat(3,1fr)}
+.ex-controls{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:20px}
+.tabs{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tab{background:none;border:none;color:var(--mut);font-family:var(--sans);font-weight:600;font-size:13.5px;padding:8px 16px;border-radius:9px;cursor:pointer}
+.tab.on{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#3a2408}
+.ex-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ex-right .search{width:190px}
+.ex-right select{width:auto;padding-right:8px}
+.tok-foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:4px}
+.cmut{color:var(--faint);font-size:12px}
+.activity{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.activity li{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--mut);padding:11px 2px;border-bottom:1px solid rgba(230,192,105,.07)}
+.activity a{color:var(--gold2)}
+.activity .dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.activity .dot.launched{background:#7fe0b0}
+.mono{font-variant-numeric:tabular-nums;cursor:pointer}
+.mono:hover{color:var(--gold2)}
+
+/* ---------- portfolio ---------- */
+.pf-sec{margin-top:30px}
+.pf-sec h2{font-family:var(--serif);font-weight:600;font-size:24px;color:#fdf6ea;margin:0 0 14px}

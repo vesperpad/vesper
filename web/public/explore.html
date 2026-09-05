@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/style.css?v=7" />
+<link rel="stylesheet" href="/style.css?v=8" />
 </head>
 <body>
 <header class="nav">
@@ -17,6 +17,7 @@
     <a href="/">Home</a>
     <a href="/explore" class="active">Explore</a>
     <a href="/launch">Launch</a>
+    <a href="/portfolio">Portfolio</a>
     <a href="/how">How it works</a>
     <a href="/docs">Docs</a>
     <a href="/faq">FAQ</a>
@@ -30,31 +31,53 @@
     <h1>Explore collections</h1>
     <p class="muted">Mint an open collection, or view a launched token. Newest first.</p>
   </div>
-  <div class="sec-tools center-tools">
-    <input id="search" class="input search" placeholder="Search collections" />
-    <button id="refresh" class="btn ghost sm">Refresh</button>
+
+  <div class="stats three" id="exStats">
+    <div><b>—</b><span>Collections</span></div>
+    <div><b>—</b><span>Live tokens</span></div>
+    <div><b>—</b><span>ETH in floors</span></div>
   </div>
-  <div id="grid" class="grid" style="margin-top:20px"><p class="empty">Loading…</p></div>
+
+  <div class="ex-controls">
+    <div class="tabs">
+      <button id="tab-all" class="tab on">All</button>
+      <button id="tab-minting" class="tab">Minting</button>
+      <button id="tab-live" class="tab">Live</button>
+    </div>
+    <div class="ex-right">
+      <input id="search" class="input search" placeholder="Search collections" />
+      <select id="sort" class="input">
+        <option value="new">Newest</option>
+        <option value="floor">Top floor</option>
+        <option value="progress">Almost sold out</option>
+      </select>
+      <button id="refresh" class="btn ghost sm">Refresh</button>
+    </div>
+  </div>
+
+  <div id="grid" class="grid" style="margin-top:18px"><p class="empty">Loading…</p></div>
+
+  <div class="section">
+    <div class="sec-head"><div><p class="eyebrow">Activity</p><h2>Recent</h2></div></div>
+    <ul id="activity" class="activity"><li class="cmut">Loading…</li></ul>
+  </div>
 </div></main>
 
 <footer class="site-foot">
   <div class="wrap foot-grid">
     <div class="foot-brand">
       <a class="brand-sm" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
-      <p class="muted">The launchpad for Robinhood Chain. Launch a token, get a live Uniswap market, and keep the trading fees.</p>
+      <p class="muted">The launchpad for Robinhood Chain. Mint an NFT, launch a token, and keep the fees.</p>
     </div>
-    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/how">How it works</a></div>
+    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/portfolio">Portfolio</a><a href="/how">How it works</a></div>
     <div class="foot-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/faq">FAQ</a></div>
     <div class="foot-col"><h4>Community</h4><a href="https://x.com/vesperpad" target="_blank" rel="noopener">X / Twitter</a><a href="https://github.com/vesperpad/vesper" target="_blank" rel="noopener">GitHub</a></div>
   </div>
-  <div class="wrap foot-bottom">
-    <span class="muted">© 2026 Vesper</span>
-    <span class="muted">Robinhood Chain · Uniswap V4</span>
-  </div>
+  <div class="wrap foot-bottom"><span class="muted">© 2026 Vesper</span><span class="muted">Robinhood Chain · Uniswap V4</span></div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 <script src="/config.js"></script>
-<script src="/app.js?v=7"></script>
+<script src="/app.js?v=8"></script>
 </body>
 </html>

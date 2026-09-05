@@ -2,6 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
@@ -18,14 +19,14 @@ interface IAirdropClaimed {
 ///         Mint ETH accrues here until sold out, when it auto-calls the factory to deploy the token,
 ///         seed + lock liquidity, and wire the airdrop + floor vault. After launch, the floor vault
 ///         may burn NFTs on redeem. EIP-2981 royalty (5%) routes to the launch's FeeSplitter.
-contract VesperNFT is ERC721, IERC2981 {
+///         Enumerable so front-ends can list a holder's NFTs.
+contract VesperNFT is ERC721Enumerable, IERC2981 {
     address public immutable factory;
     uint256 public immutable maxSupply;
     uint256 public immutable mintPrice; // 0 = free
     string private _uri;
 
     uint256 public totalMinted;
-    uint256 public burned;
     bool public finalized;
     address public vault; // set at finalize; only it may burn
     address public airdrop; // set at finalize; used to lock claimed NFTs
@@ -52,10 +53,6 @@ contract VesperNFT is ERC721, IERC2981 {
         mintPrice = mintPrice_;
     }
 
-    function totalSupply() external view returns (uint256) {
-        return totalMinted - burned;
-    }
-
     function mint() external payable {
         require(!finalized, "DONE");
         require(totalMinted < maxSupply, "SOLD_OUT");
@@ -66,7 +63,6 @@ contract VesperNFT is ERC721, IERC2981 {
         _mint(msg.sender, id);
         emit Minted(msg.sender, id);
         if (totalMinted == maxSupply) {
-            // auto-deploy the token; permissionless finalize() is also available as a fallback
             IVesperFactoryFinalize(factory).finalize(address(this));
         }
     }
@@ -94,21 +90,10 @@ contract VesperNFT is ERC721, IERC2981 {
         emit Finalized();
     }
 
-    /// @dev Once an NFT's airdrop is claimed it becomes non-transferable to others — it can only be
-    ///      burned (redeemed to the floor). Minting (from == 0) and burning (to == 0) are always allowed.
-    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
-        address from = _ownerOf(tokenId);
-        if (from != address(0) && to != address(0) && airdrop != address(0)) {
-            require(!IAirdropClaimed(airdrop).claimed(tokenId), "CLAIMED_LOCKED");
-        }
-        return super._update(to, tokenId, auth);
-    }
-
     /// @notice Burn a token — only the floor vault, on redeem.
     function burn(uint256 tokenId) external {
         require(msg.sender == vault, "NOT_VAULT");
         _burn(tokenId);
-        burned++;
     }
 
     function tokenURI(uint256) public view override returns (string memory) {
@@ -123,7 +108,25 @@ contract VesperNFT is ERC721, IERC2981 {
         return (royaltyReceiver, (salePrice * ROYALTY_BPS) / 10_000);
     }
 
-    function supportsInterface(bytes4 id) public view override(ERC721, IERC165) returns (bool) {
+    /// @dev Once an NFT's airdrop is claimed it becomes non-transferable to others — it can only be
+    ///      burned (redeemed to the floor). Minting (from == 0) and burning (to == 0) are always allowed.
+    function _update(address to, uint256 tokenId, address auth)
+        internal
+        override(ERC721Enumerable)
+        returns (address)
+    {
+        address from = _ownerOf(tokenId);
+        if (from != address(0) && to != address(0) && airdrop != address(0)) {
+            require(!IAirdropClaimed(airdrop).claimed(tokenId), "CLAIMED_LOCKED");
+        }
+        return super._update(to, tokenId, auth);
+    }
+
+    function _increaseBalance(address account, uint128 amount) internal override(ERC721Enumerable) {
+        super._increaseBalance(account, amount);
+    }
+
+    function supportsInterface(bytes4 id) public view override(ERC721Enumerable, IERC165) returns (bool) {
         return id == type(IERC2981).interfaceId || super.supportsInterface(id);
     }
 }
