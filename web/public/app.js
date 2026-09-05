@@ -122,7 +122,7 @@ if ($("#launchForm")) {
 
 // ================= EXPLORE =================
 if ($("#grid") && !$("#collection") && !$("#portfolio")) {
-  let ALL = [], filter = "all", sort = "new";
+  let ALL = [], filter = "nfts", sort = "new";
   const grid = $("#grid");
 
   async function load() {
@@ -140,8 +140,8 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
   function render() {
     const q = ($("#search")?.value || "").toLowerCase().trim();
     let list = ALL.filter(c => !q || (c.nm + " " + c.sy).toLowerCase().includes(q));
-    if (filter === "minting") list = list.filter(c => !c.fin);
-    if (filter === "live") list = list.filter(c => c.fin);
+    if (filter === "nfts") list = list.filter(c => !c.fin);
+    if (filter === "tokens") list = list.filter(c => c.fin);
     if (sort === "floor") list.sort((a, b) => (b.floor > a.floor ? 1 : -1));
     if (sort === "progress") list.sort((a, b) => (b.minted / b.max) - (a.minted / a.max));
     grid.innerHTML = list.map(card).join("") || `<p class="empty">Nothing here yet.</p>`;
@@ -180,7 +180,7 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
       ).join("") : `<li class="cmut">No activity yet.</li>`;
     } catch {}
   }
-  ["all", "minting", "live"].forEach(k => { const b = $("#tab-" + k); if (b) b.onclick = () => { filter = k; document.querySelectorAll(".tab").forEach(t => t.classList.remove("on")); b.classList.add("on"); render(); }; });
+  ["nfts", "tokens"].forEach(k => { const b = $("#tab-" + k); if (b) b.onclick = () => { filter = k; document.querySelectorAll(".tab").forEach(t => t.classList.remove("on")); b.classList.add("on"); render(); }; });
   if ($("#sort")) $("#sort").onchange = e => { sort = e.target.value; render(); };
   if ($("#search")) $("#search").addEventListener("input", render);
   if ($("#refresh")) $("#refresh").onclick = load;
