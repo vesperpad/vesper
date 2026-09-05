@@ -100,7 +100,7 @@ if ($("#launchForm")) {
     const supply = parseInt($("#f-nftsupply").value.trim() || "1000", 10);
     const priceStr = $("#f-price").value.trim() || "0";
     if (!name || !symbol || !logo) { msg("Fill token name, symbol and logo.", "err"); return; }
-    if (!C.FACTORY) { msg("Launching soon — the contract goes live shortly.", ""); return; }
+    if (!C.FACTORY) { msg("Launching soon. The contract goes live shortly.", ""); return; }
     try {
       btn.disabled = true;
       if (!signer) await connect();
@@ -126,7 +126,7 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
   const grid = $("#grid");
 
   async function load() {
-    if (!C.FACTORY) { grid.innerHTML = `<p class="empty">No launches yet — be the first when Vesper goes live.</p>`; renderStats([]); const ab = $("#activity"); if (ab) ab.innerHTML = `<li class="cmut">No activity yet.</li>`; return; }
+    if (!C.FACTORY) { grid.innerHTML = `<p class="empty">No launches yet. Be the first when Vesper goes live.</p>`; renderStats([]); const ab = $("#activity"); if (ab) ab.innerHTML = `<li class="cmut">No activity yet.</li>`; return; }
     grid.innerHTML = `<p class="empty">Loading…</p>`;
     try {
       const f = factory(ro);
