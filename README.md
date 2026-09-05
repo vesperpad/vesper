@@ -65,7 +65,7 @@ Set `window.VESPER.FACTORY` in `web/public/config.js` to the deployed factory ad
 
 ## Status
 
-Contracts and site are complete and tested on a fork. Not yet deployed to mainnet.
+Live on Robinhood Chain. Contracts deployed and the site is running at [vesperpad.world](https://vesperpad.world).
 
 ## Deployed (Robinhood Chain)
 
