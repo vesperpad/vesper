@@ -78,14 +78,32 @@ document.querySelectorAll("[data-connect]").forEach(b => b.onclick = connect);
 })();
 
 // ---------- helpers ----------
-const ro = new ethers.JsonRpcProvider(C.chain.rpc);
-const logsRo = new ethers.JsonRpcProvider(C.chain.logsRpc || C.chain.rpc); // for eth_getLogs (events)
+// Quarrel/publicnode choke on JSON-RPC batch arrays (they hang), so force one request per call.
+const NET = new ethers.Network(C.chain.name || "rh", C.chain.id);
+const rpcOpts = { batchMaxCount: 1, staticNetwork: NET };
+const mkLogsProv = () => new ethers.JsonRpcProvider(C.chain.logsRpc || C.chain.rpc, NET, rpcOpts);
+const ro = new ethers.JsonRpcProvider(C.chain.rpc, NET, rpcOpts);
+const logsRo = mkLogsProv(); // for eth_getLogs (events)
 const factory = r => new ethers.Contract(C.FACTORY, C.factoryAbi, r);
 const nftC = (a, r) => new ethers.Contract(a, C.nftAbi, r);
 const esc = s => String(s || "").replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
 const short = a => a ? a.slice(0, 6) + "…" + a.slice(-4) : "";
 const eth = v => { try { return (+ethers.formatEther(v)).toLocaleString(undefined, { maximumFractionDigits: 4 }); } catch { return "0"; } };
 async function metaImg(uri) { if (!uri) return ""; try { return (await fetch(uri).then(r => r.json())).image || ""; } catch { return ""; } }
+function withTimeout(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]); }
+// The logs RPC is occasionally slow/hangs; retry with a fresh provider so a wedged connection never blocks the UI.
+async function queryLogs(address, abi, filterFn, span = 200000, tries = 2, ms = 12000) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    const prov = mkLogsProv();
+    try {
+      const c = new ethers.Contract(address, abi, prov);
+      const cur = await withTimeout(prov.getBlockNumber(), 8000);
+      return await withTimeout(c.queryFilter(filterFn(c), Math.max(0, cur - span), cur), ms);
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("getLogs failed");
+}
 function copy(t) { navigator.clipboard?.writeText(t); }
 function explLink(addr) { return C.chain.explorer ? `${C.chain.explorer}/address/${addr}` : ""; }
 async function addToWallet(token, sym, img) {
@@ -169,12 +187,13 @@ async function buyNFT(nft, tokenId, priceWei) {
   return await (await mkt.buy(nft, tokenId, { value: priceWei })).wait();
 }
 async function activeListings(nft) {
-  const mkt = new ethers.Contract(C.MARKET, C.marketAbi, logsRo);
-  let ev = [];
-  try { const cur = await logsRo.getBlockNumber(); ev = await mkt.queryFilter(mkt.filters.Listed(nft), Math.max(0, cur - 200000), cur); } catch {}
+  // NOTE: filtering by the indexed nft address topic makes the RPC hang; fetch all Listed() and filter client-side.
+  const ev = await queryLogs(C.MARKET, C.marketAbi, c => c.filters.Listed());
+  const want = nft.toLowerCase();
   const read = new ethers.Contract(C.MARKET, C.marketAbi, ro);
   const seen = new Set(), out = [];
   for (const e of ev.reverse()) {
+    if (e.args.nft.toLowerCase() !== want) continue;
     const id = Number(e.args.tokenId); if (seen.has(id)) continue; seen.add(id);
     try { const l = await read.listings(nft, id); if (l.seller !== ethers.ZeroAddress) out.push({ id, seller: l.seller, price: l.price }); } catch {}
   }
@@ -182,9 +201,8 @@ async function activeListings(nft) {
 }
 
 async function drawChart(token, canvas) {
-  const pm = new ethers.Contract(C.POOL_MANAGER, C.poolManagerAbi, logsRo);
   let ev = [];
-  try { const cur = await logsRo.getBlockNumber(); ev = await pm.queryFilter(pm.filters.Swap(poolIdOf(token)), Math.max(0, cur - 200000), cur); } catch {}
+  try { ev = await queryLogs(C.POOL_MANAGER, C.poolManagerAbi, c => c.filters.Swap(poolIdOf(token))); } catch {}
   let pts = ev.map(e => priceFromSqrt(BigInt(e.args.sqrtPriceX96)).ethPerToken).filter(x => x > 0);
   const cur = priceFromSqrt(await poolSqrt(token)).ethPerToken;
   if (cur > 0) pts.push(cur);
@@ -496,7 +514,8 @@ if ($("#collection")) {
         // listings for sale (buy from other holders)
         async function loadMarket() {
           const box = $("#market"); if (!box) return;
-          const rows = await activeListings(a2);
+          let rows = [];
+          try { rows = await activeListings(a2); } catch { box.innerHTML = `<p class="cmut">Could not load listings. Refresh to retry.</p>`; return; }
           if (!rows.length) { box.innerHTML = `<p class="cmut">No NFTs listed yet.</p>`; return; }
           box.innerHTML = rows.map(r =>
             `<div class="listing"><span>NFT #${r.id} · <b>${eth(r.price)} ETH</b></span><button class="btn primary sm" data-buy="${r.id}" data-px="${r.price}">Buy</button></div>`
@@ -555,10 +574,10 @@ if ($("#marketGrid")) {
     if (!C.FACTORY || !C.MARKET) { grid.innerHTML = `<p class="empty">Marketplace launching soon.</p>`; return; }
     grid.innerHTML = `<p class="empty">Loading…</p>`;
     try {
-      const mkt = new ethers.Contract(C.MARKET, C.marketAbi, logsRo);
       const read = new ethers.Contract(C.MARKET, C.marketAbi, ro);
       let ev = [];
-      try { const cur = await logsRo.getBlockNumber(); ev = await mkt.queryFilter(mkt.filters.Listed(), Math.max(0, cur - 200000), cur); } catch {}
+      try { ev = await queryLogs(C.MARKET, C.marketAbi, c => c.filters.Listed()); }
+      catch { grid.innerHTML = `<p class="empty">Could not reach the network. <button class="btn ghost sm" id="retry">Retry</button></p>`; const rb = $("#retry"); if (rb) rb.onclick = load; return; }
       const seen = new Set(), items = [];
       for (const e of ev.reverse()) {
         const nft = e.args.nft, id = Number(e.args.tokenId), k = nft + "-" + id;
