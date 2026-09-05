@@ -145,6 +145,32 @@ async function sellToken(token, amtStr) {
   const tx = await router.swap(poolKeyOf(token), params, { takeClaims: false, settleUsingBurn: false }, "0x");
   return await tx.wait();
 }
+// ---------- NFT marketplace ----------
+async function listNFT(nft, tokenId, priceEth) {
+  if (!signer) await connect();
+  const c = new ethers.Contract(nft, C.nftAbi, signer);
+  if ((await c.getApproved(tokenId)).toLowerCase() !== C.MARKET.toLowerCase()) { const ap = await c.approve(C.MARKET, tokenId); await ap.wait(); }
+  const mkt = new ethers.Contract(C.MARKET, C.marketAbi, signer);
+  return await (await mkt.list(nft, tokenId, ethers.parseEther(priceEth))).wait();
+}
+async function buyNFT(nft, tokenId, priceWei) {
+  if (!signer) await connect();
+  const mkt = new ethers.Contract(C.MARKET, C.marketAbi, signer);
+  return await (await mkt.buy(nft, tokenId, { value: priceWei })).wait();
+}
+async function activeListings(nft) {
+  const mkt = new ethers.Contract(C.MARKET, C.marketAbi, logsRo);
+  let ev = [];
+  try { const cur = await logsRo.getBlockNumber(); ev = await mkt.queryFilter(mkt.filters.Listed(nft), Math.max(0, cur - 200000), cur); } catch {}
+  const read = new ethers.Contract(C.MARKET, C.marketAbi, ro);
+  const seen = new Set(), out = [];
+  for (const e of ev.reverse()) {
+    const id = Number(e.args.tokenId); if (seen.has(id)) continue; seen.add(id);
+    try { const l = await read.listings(nft, id); if (l.seller !== ethers.ZeroAddress) out.push({ id, seller: l.seller, price: l.price }); } catch {}
+  }
+  return out;
+}
+
 async function drawChart(token, canvas) {
   const pm = new ethers.Contract(C.POOL_MANAGER, C.poolManagerAbi, logsRo);
   let ev = [];
@@ -371,7 +397,13 @@ if ($("#collection")) {
             <button id="claimBtn" class="btn ghost full" disabled>Claim airdrop</button>
             <button id="redeemBtn" class="btn ghost full" disabled>Sell NFT → floor</button>
           </div>
-          <p id="mMsg" class="msg"></p>`;
+          <div class="row2">
+            <input id="listPrice" class="input" type="number" min="0" step="0.001" placeholder="list price ETH" />
+            <button id="listBtn" class="btn ghost full" disabled>Sell NFT to a buyer</button>
+          </div>
+          <p id="mMsg" class="msg"></p>
+          <p class="form-sec" style="margin-top:14px">For sale</p>
+          <div id="market"><p class="cmut">Loading listings…</p></div>`;
       }
       box.innerHTML = `
         <div class="col-head">
@@ -421,7 +453,7 @@ if ($("#collection")) {
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
         let picked = null;
-        const setPicked = id => { picked = id; $("#claimBtn").disabled = false; $("#redeemBtn").disabled = false; };
+        const setPicked = id => { picked = id; $("#claimBtn").disabled = false; $("#redeemBtn").disabled = false; $("#listBtn").disabled = false; };
         $("#loadOwned").onclick = async () => {
           if (!signer) await connect();
           const ids = await ownedIds(a2);
@@ -441,6 +473,33 @@ if ($("#collection")) {
         };
         $("#claimBtn").onclick = () => run("claim");
         $("#redeemBtn").onclick = () => run("redeem");
+        // list your NFT for sale
+        $("#listBtn").onclick = async () => {
+          const m = $("#mMsg"); const p = $("#listPrice").value.trim();
+          if (picked == null) { m.textContent = "Pick your NFT first (Show my NFTs)."; m.className = "msg err"; return; }
+          if (!p || Number(p) <= 0) { m.textContent = "Enter a list price."; m.className = "msg err"; return; }
+          try { if (!signer) await connect(); m.textContent = "Approving + listing…"; m.className = "msg";
+            await listNFT(a2, picked, p);
+            m.textContent = "Listed for sale!"; m.className = "msg ok"; loadMarket();
+          } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
+        };
+        // listings for sale (buy from other holders)
+        async function loadMarket() {
+          const box = $("#market"); if (!box) return;
+          const rows = await activeListings(a2);
+          if (!rows.length) { box.innerHTML = `<p class="cmut">No NFTs listed yet.</p>`; return; }
+          box.innerHTML = rows.map(r =>
+            `<div class="listing"><span>NFT #${r.id} · <b>${eth(r.price)} ETH</b></span><button class="btn primary sm" data-buy="${r.id}" data-px="${r.price}">Buy</button></div>`
+          ).join("");
+          box.querySelectorAll("[data-buy]").forEach(b => b.onclick = async () => {
+            const m = $("#mMsg");
+            try { if (!signer) await connect(); m.textContent = "Buying NFT…"; m.className = "msg";
+              await buyNFT(a2, Number(b.dataset.buy), BigInt(b.dataset.px));
+              m.textContent = "NFT bought!"; m.className = "msg ok"; loadMarket();
+            } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
+          });
+        }
+        loadMarket();
       }
     } catch { box.innerHTML = `<p class="empty">Could not load this collection.</p>`; }
   }

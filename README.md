@@ -75,3 +75,4 @@ Live on Robinhood Chain. Contracts deployed and the site is running at [vesperpa
 | VesperFeeHook | `0xFd9EDa1DC25Df6fEC433Df778940D100a33a40cC` |
 | LaunchDeployer | `0x41dE2EA622847b2875CCF9aB619Dde36A6b9C707` |
 | Swap router (PoolSwapTest) | `0x569e99E9E8C09C4940a0407aD4E3d8ef90B6d51F` |
+| NFT marketplace | `0x79dae07308e70c6Ce649D1dd9bD650249A1A0AA0` |

@@ -24,6 +24,7 @@ import {VesperNFT} from "../src/VesperNFT.sol";
 import {VesperToken} from "../src/VesperToken.sol";
 import {Airdrop} from "../src/Airdrop.sol";
 import {FloorVault} from "../src/FloorVault.sol";
+import {VesperMarket} from "../src/VesperMarket.sol";
 
 contract VesperNFTLaunchTest is Test {
     using PoolIdLibrary for PoolKey;
@@ -155,6 +156,34 @@ contract VesperNFTLaunchTest is Test {
         FloorVault(payable(vault)).redeem(2);
         assertEq(VesperNFT(nft).totalSupply(), supplyBefore - 1, "nft burned");
         assertGt(holder2.balance, h2Before, "redeemer got floor ETH");
+    }
+
+    function test_Marketplace() public {
+        vm.prank(creator);
+        address nft = factory.createLaunch("MktTok", "MKT", "u", "Mkt NFT", "MKTN", 2, PRICE);
+        for (uint256 i = 0; i < 2; i++) { address m = _minter(200 + i); vm.deal(m, 1 ether); vm.prank(m); VesperNFT(nft).mint{value: PRICE}(); }
+        (address ln, address lt, address lv, address la, address splitter) = factory.launches(factory.launchesLength() - 1);
+        ln; lt; lv; la;
+
+        VesperMarket mkt = new VesperMarket();
+        address seller = _minter(200); // holds tokenId 1, unclaimed -> transferable
+        address buyer = makeAddr("mktbuyer"); vm.deal(buyer, 1 ether);
+        uint256 price = 0.02 ether;
+
+        vm.startPrank(seller);
+        IERC721(nft).approve(address(mkt), 1);
+        mkt.list(nft, 1, price);
+        vm.stopPrank();
+
+        uint256 sellerBefore = seller.balance;
+        uint256 splitBefore = splitter.balance;
+        vm.prank(buyer);
+        mkt.buy{value: price}(nft, 1);
+
+        assertEq(IERC721(nft).ownerOf(1), buyer, "buyer got NFT");
+        uint256 royalty = price * 5 / 100;
+        assertEq(splitter.balance, splitBefore + royalty, "5% royalty to splitter");
+        assertEq(seller.balance, sellerBefore + price - royalty, "seller got price - royalty");
     }
 
     function test_FreeLaunch_SingleSided() public {

@@ -12,6 +12,7 @@ window.VESPER = {
   FACTORY: "0x9a86E62BD2fe67220a8161099868406912F48D71", // empty => site runs in "launching soon" preview mode
   POOL_MANAGER: "0x8366a39CC670B4001A1121B8F6A443A643e40951",
   ROUTER: "0x569e99E9E8C09C4940a0407aD4E3d8ef90B6d51F", // PoolSwapTest (buy/sell helper)
+  MARKET: "0x79dae07308e70c6Ce649D1dd9bD650249A1A0AA0", // NFT marketplace (list/buy)
   HOOK: "0xFd9EDa1DC25Df6fEC433Df778940D100a33a40cC",
   TICK_SPACING: 60,
   POOLS_SLOT: 6,
@@ -41,7 +42,16 @@ window.VESPER = {
     "function hasMinted(address) view returns (bool)",
     "function balanceOf(address) view returns (uint256)",
     "function tokenOfOwnerByIndex(address,uint256) view returns (uint256)",
+    "function getApproved(uint256) view returns (address)",
+    "function approve(address,uint256)",
     "function mint() payable"
+  ],
+  marketAbi: [
+    "function list(address nft, uint256 tokenId, uint256 price)",
+    "function cancel(address nft, uint256 tokenId)",
+    "function buy(address nft, uint256 tokenId) payable",
+    "function listings(address,uint256) view returns (address seller, uint256 price)",
+    "event Listed(address indexed nft, uint256 indexed tokenId, address indexed seller, uint256 price)"
   ],
   tokenAbi: [
     "function name() view returns (string)",
