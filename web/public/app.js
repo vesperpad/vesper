@@ -229,8 +229,8 @@ if ($("#launchForm")) {
     e.preventDefault();
     const btn = $("#launchBtn");
     const name = $("#f-name").value.trim(), symbol = $("#f-symbol").value.trim(), logo = $("#f-logo").files[0];
-    const nftName = $("#f-nftname").value.trim() || name + " NFT";
-    const nftSymbol = $("#f-nftsymbol").value.trim() || symbol + "N";
+    const nftName = ($("#f-nftname") ? $("#f-nftname").value.trim() : "") || name + " NFT";
+    const nftSymbol = ($("#f-nftsymbol") ? $("#f-nftsymbol").value.trim() : "") || symbol;
     const supply = parseInt($("#f-nftsupply").value.trim() || "1000", 10);
     const priceStr = $("#f-price").value.trim() || "0";
     if (!name || !symbol || !logo) { msg("Fill token name, symbol and logo.", "err"); return; }
@@ -578,6 +578,12 @@ if ($("#marketGrid")) {
   if ($("#refresh")) $("#refresh").onclick = load;
   load();
 }
+
+// tap-to-copy for any static [data-copy] (e.g. the contract addresses on Home)
+document.querySelectorAll("[data-copy]").forEach(el => {
+  if (el.closest("#collection")) return; // collection page wires its own copy
+  el.addEventListener("click", () => { copy(el.dataset.copy); const t = el.textContent; el.textContent = "copied"; setTimeout(() => (el.textContent = t), 900); });
+});
 
 // boot
 if (window.ethereum && window.ethereum.selectedAddress) connect().catch(() => {});
