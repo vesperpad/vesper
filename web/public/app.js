@@ -56,6 +56,16 @@ async function ensureChain() {
 }
 document.querySelectorAll("[data-connect]").forEach(b => b.onclick = connect);
 
+// ---------- back button (every sub-page) ----------
+(function () {
+  const wrap = document.querySelector("main.sub .wrap");
+  if (!wrap) return;
+  const b = document.createElement("button");
+  b.className = "backbtn"; b.type = "button"; b.innerHTML = "← Back";
+  b.onclick = () => { if (history.length > 1 && document.referrer) history.back(); else location.href = "/"; };
+  wrap.insertBefore(b, wrap.firstChild);
+})();
+
 // ---------- mobile menu ----------
 (function () {
   const nav = document.querySelector(".nav"), links = document.querySelector(".nav-links");
