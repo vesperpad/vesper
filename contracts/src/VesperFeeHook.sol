@@ -33,9 +33,14 @@ contract VesperFeeHook is BaseHook {
     mapping(PoolId => address) public creatorOf;
     mapping(PoolId => address) public vaultOf;
 
+    /// @notice Creator trade-fee earnings accrue here and must be claimed manually (not auto-sent).
+    ///         The NFT floor vault (30%) and dev (20%) shares are still paid out automatically.
+    mapping(address => uint256) public feesOwed;
+
     event FactorySet(address factory);
     event PoolRegistered(PoolId indexed id, address creator, address vault);
     event FeeSplit(PoolId indexed id, uint256 toCreator, uint256 toVault, uint256 toDev);
+    event FeesClaimed(address indexed creator, uint256 amount);
 
     constructor(IPoolManager _manager, address _dev, address _owner) BaseHook(_manager) {
         require(_dev != address(0) && _owner != address(0), "ZERO");
@@ -90,11 +95,28 @@ contract VesperFeeHook is BaseHook {
         uint256 toCreator = (feeAmount * CREATOR_BPS) / 10_000;
         uint256 toVault = (feeAmount * VAULT_BPS) / 10_000;
         uint256 toDev = feeAmount - toCreator - toVault;
-        if (toCreator > 0) poolManager.take(key.currency0, creator, toCreator);
+        // Creator's share is held here and claimed manually; vault + dev are paid out immediately.
+        if (toCreator > 0) {
+            poolManager.take(key.currency0, address(this), toCreator);
+            feesOwed[creator] += toCreator;
+        }
         if (toVault > 0) poolManager.take(key.currency0, vault, toVault);
         if (toDev > 0) poolManager.take(key.currency0, dev, toDev);
         emit FeeSplit(id, toCreator, toVault, toDev);
     }
+
+    /// @notice Claim accrued creator trade fees (native ETH).
+    function claim() external returns (uint256 amount) {
+        amount = feesOwed[msg.sender];
+        require(amount > 0, "NOTHING");
+        feesOwed[msg.sender] = 0;
+        (bool ok,) = msg.sender.call{value: amount}("");
+        require(ok, "SEND_FAIL");
+        emit FeesClaimed(msg.sender, amount);
+    }
+
+    /// @notice ETH pulled from the pool for creator fees lands here.
+    receive() external payable {}
 
     function _beforeSwap(address, PoolKey calldata key, SwapParams calldata params, bytes calldata)
         internal

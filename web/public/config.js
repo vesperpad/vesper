@@ -75,6 +75,10 @@ window.VESPER = {
     "function extsload(bytes32 slot) view returns (bytes32)",
     "event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)"
   ],
+  hookAbi: [
+    "function feesOwed(address) view returns (uint256)",
+    "function claim() returns (uint256)"
+  ],
   routerAbi: [
     "function swap((address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) key,(bool zeroForOne,int256 amountSpecified,uint160 sqrtPriceLimitX96) params,(bool takeClaims,bool settleUsingBurn) testSettings,bytes hookData) payable returns (int256)"
   ]

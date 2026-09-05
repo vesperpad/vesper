@@ -638,9 +638,31 @@ if ($("#portfolio")) {
       }
       const cardMini = s => `<a class="tok" href="/collection?a=${s.a}"><img src="${s.img || "/logo-placeholder.svg"}" onerror="this.src='/logo-placeholder.svg'"/><div><div class="nm">${esc(s.nm)}</div><div class="sy">$${esc(s.sy)}</div></div><div class="tok-foot">${s.fin ? `<span class="pill live">Live</span>` : `<span class="pill mint">${s.minted}/${s.max}</span>`}</div></a>`;
       const heldRow = h => `<a class="tok" href="/collection?a=${h.s.a}"><img src="${h.s.img || "/logo-placeholder.svg"}" onerror="this.src='/logo-placeholder.svg'"/><div><div class="nm">${esc(h.s.nm)} #${h.id}</div><div class="sy">${h.s.fin ? "floor " + eth(h.s.floor) + " ETH" : "minting"}</div></div><div class="tok-foot">${h.s.fin ? `<span class="pill live">manage →</span>` : `<span class="pill mint">${h.s.minted}/${h.s.max}</span>`}</div></a>`;
+      // creator trade fees accrue in the hook and are claimed manually
+      let owedWei = 0n;
+      try { if (C.HOOK && C.hookAbi) owedWei = await new ethers.Contract(C.HOOK, C.hookAbi, ro).feesOwed(account); } catch {}
+      const feeSec = `
+        <div class="pf-sec"><h2>Trade fees</h2>
+          <div class="card feecard">
+            <div><div class="cmut">Claimable creator fees</div><div class="feeamt">${eth(owedWei)} ETH</div></div>
+            <button id="claimFees" class="btn primary" ${owedWei > 0n ? "" : "disabled"}>Claim</button>
+          </div>
+          <p class="cmut" style="font-size:12.5px;margin:8px 2px 0">Your 50% share of trade fees is held in the fee hook and paid only when you claim. The NFT floor and protocol shares settle automatically.</p>
+          <p id="feeMsg" class="msg"></p>
+        </div>`;
       box.innerHTML = `
+        ${feeSec}
         <div class="pf-sec"><h2>My NFTs</h2><div class="grid">${held.length ? held.map(heldRow).join("") : `<p class="empty">You don't hold any Vesper NFTs yet.</p>`}</div></div>
         <div class="pf-sec"><h2>My launches</h2><div class="grid">${mine.length ? mine.map(cardMini).join("") : `<p class="empty">You haven't created a launch yet. <a href="/launch">Create one →</a></p>`}</div></div>`;
+      const cf = $("#claimFees");
+      if (cf) cf.onclick = async () => {
+        const m = $("#feeMsg");
+        try { if (!signer) await connect(); m.textContent = "Claiming…"; m.className = "msg";
+          const h = new ethers.Contract(C.HOOK, C.hookAbi, signer);
+          await (await h.claim()).wait();
+          m.textContent = "Claimed! ETH is in your wallet."; m.className = "msg ok"; setTimeout(load, 1500);
+        } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
+      };
     } catch { box.innerHTML = `<p class="empty">Could not load your portfolio.</p>`; }
   }
   load();

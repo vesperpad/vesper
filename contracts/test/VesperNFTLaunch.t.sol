@@ -57,7 +57,7 @@ contract VesperNFTLaunchTest is Test {
         (bool ok,) =
             CREATE2_PROXY.call(abi.encodePacked(salt, abi.encodePacked(type(VesperFeeHook).creationCode, args)));
         require(ok && hookAddr.code.length > 0, "hook");
-        hook = VesperFeeHook(hookAddr);
+        hook = VesperFeeHook(payable(hookAddr));
         LaunchDeployer dep = new LaunchDeployer();
         factory = new VesperFactory(pm, IPositionManager(POSITION_MANAGER), IAllowanceTransfer(PERMIT2), hook, dep, DEV_MINT, DEV_SEC);
         hook.setFactory(address(factory));
@@ -143,10 +143,18 @@ contract VesperNFTLaunchTest is Test {
         router.swap{value: amountIn + 0.05 ether}(key, sp, ts, bytes(""));
 
         uint256 feeTotal = (amountIn * 250) / 10_000; // 0.0025
-        assertApproxEqAbs(creator.balance - crEthBefore, feeTotal * 50 / 100, 1e13, "creator 50% fee");
+        // creator fee is NOT auto-sent anymore; it accrues in the hook for manual claim
+        assertEq(creator.balance, crEthBefore, "creator not auto-paid");
+        assertApproxEqAbs(hook.feesOwed(creator), feeTotal * 50 / 100, 1e13, "creator 50% fee accrued");
         assertApproxEqAbs(vault.balance - vaultBefore, feeTotal * 30 / 100, 1e13, "vault 30% fee");
         assertApproxEqAbs(DEV_TRADE.balance - devEthBefore, feeTotal * 20 / 100, 1e13, "dev 20% fee");
         assertGt(IERC20(token).balanceOf(buyer), 0, "buyer got tokens");
+        // creator claims accrued fees
+        uint256 owed = hook.feesOwed(creator);
+        vm.prank(creator);
+        hook.claim();
+        assertEq(creator.balance - crEthBefore, owed, "creator claimed fees");
+        assertEq(hook.feesOwed(creator), 0, "owed cleared after claim");
 
         // redeem NFT #2 to floor
         address holder2 = _minter(1);

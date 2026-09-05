@@ -274,6 +274,8 @@ a.tok{color:inherit}
 .pctrow{display:flex;gap:6px;margin:-4px 0 2px}
 .pctrow button{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#e9dfce;font-family:var(--sans);font-size:12.5px;font-weight:600;padding:6px 0;border-radius:8px;cursor:pointer;transition:background .15s,border-color .15s}
 .pctrow button:hover{background:rgba(230,192,105,.14);border-color:rgba(230,192,105,.4)}
+.feecard{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.feecard .feeamt{font-family:var(--serif);font-size:26px;font-weight:700;color:#fdf6ea;margin-top:2px}
 
 /* marketplace listings */
 #market .listing{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
