@@ -32,13 +32,57 @@ async function connect() {
     await ensureChain();
     signer = await provider.getSigner();
     account = await signer.getAddress();
-    document.querySelectorAll("[data-connect]").forEach(b => b.textContent = short(account));
+    try { localStorage.setItem("vesper_wallet", window.ethereum ? "injected" : "wc"); } catch {}
+    onConnected();
     return account;
   } catch (e) {
     console.error(e);
     return null;
   }
 }
+// keep the connection across pages: silently restore without prompting
+async function eagerConnect() {
+  try {
+    const kind = localStorage.getItem("vesper_wallet");
+    if (kind === "injected" && window.ethereum) {
+      const accts = await window.ethereum.request({ method: "eth_accounts" });
+      if (accts && accts.length) {
+        eip1193 = window.ethereum;
+        provider = new ethers.BrowserProvider(eip1193);
+        signer = await provider.getSigner();
+        account = await signer.getAddress();
+        onConnected();
+      }
+    } else if (kind === "wc") {
+      const { EthereumProvider } = await import("https://esm.sh/@walletconnect/ethereum-provider@2.17.0");
+      wc = await EthereumProvider.init({
+        projectId: WC_PROJECT_ID, chains: [C.chain.id], optionalChains: [C.chain.id, 1],
+        rpcMap: { [C.chain.id]: C.chain.rpc }, showQrModal: true,
+        metadata: { name: "Vesper", description: "The launchpad for Robinhood Chain", url: "https://vesperpad.world", icons: ["https://vesperpad.world/vesper-icon.png"] }
+      });
+      if (wc.session && wc.accounts && wc.accounts.length) {
+        eip1193 = wc; provider = new ethers.BrowserProvider(eip1193);
+        signer = await provider.getSigner(); account = await signer.getAddress();
+        onConnected();
+      }
+    }
+  } catch (e) { console.warn("eager connect", e); }
+}
+let _evtBound = false;
+function onConnected() {
+  document.querySelectorAll("[data-connect]").forEach(b => b.textContent = short(account));
+  if (!_evtBound && eip1193 && eip1193.on) {
+    _evtBound = true;
+    eip1193.on("accountsChanged", a => {
+      if (!a || !a.length) { account = null; signer = null; try { localStorage.removeItem("vesper_wallet"); } catch {}; document.querySelectorAll("[data-connect]").forEach(b => b.textContent = "Connect wallet"); }
+      else { account = a[0]; provider = new ethers.BrowserProvider(eip1193); provider.getSigner().then(s => signer = s).catch(() => {}); document.querySelectorAll("[data-connect]").forEach(b => b.textContent = short(account)); }
+      document.dispatchEvent(new CustomEvent("wallet:changed", { detail: { account } }));
+    });
+    eip1193.on("chainChanged", () => { provider = new ethers.BrowserProvider(eip1193); });
+  }
+  document.dispatchEvent(new CustomEvent("wallet:changed", { detail: { account } }));
+}
+const walletReady = eagerConnect();
 async function ensureChain() {
   try {
     const net = await provider.getNetwork();
@@ -409,9 +453,11 @@ if ($("#collection")) {
           <div class="tokhead"><span class="pill live">Live</span><span class="pxline" id="pxLine">loading price…</span></div>
           <canvas id="chart" class="chart" width="620" height="150"></canvas>
           <div class="buybox">
-            <label>Buy with ETH<input id="buyAmt" class="input" type="number" min="0" step="0.001" placeholder="0.01" /></label>
+            <label>Buy with ETH<span class="bal" id="ethBal">—</span><input id="buyAmt" class="input" type="number" min="0" step="0.001" placeholder="0.01" /></label>
+            <div class="pctrow" id="buyPct"><button type="button" data-p="25">25%</button><button type="button" data-p="50">50%</button><button type="button" data-p="75">75%</button><button type="button" data-p="100">Max</button></div>
             <button id="buyBtn" class="btn primary full">Buy $${esc(s.sy)}</button>
-            <label>Sell $${esc(s.sy)} (amount)<input id="sellAmt" class="input" type="number" min="0" placeholder="1000000" /></label>
+            <label>Sell $${esc(s.sy)}<span class="bal" id="tokBal">—</span><input id="sellAmt" class="input" type="number" min="0" placeholder="1000000" /></label>
+            <div class="pctrow" id="sellPct"><button type="button" data-p="25">25%</button><button type="button" data-p="50">50%</button><button type="button" data-p="75">75%</button><button type="button" data-p="100">Max</button></div>
             <button id="sellBtn" class="btn ghost full">Sell $${esc(s.sy)}</button>
             <p id="buyMsg" class="msg"></p>
           </div>
@@ -460,6 +506,34 @@ if ($("#collection")) {
           const cv = $("#chart"); if (cv) drawChart(s.token, cv);
         };
         refreshPx();
+        // wallet balances + percentage helpers
+        const tokC = new ethers.Contract(s.token, ["function balanceOf(address) view returns (uint256)"], ro);
+        let ethBalWei = 0n, tokBalWei = 0n;
+        const trimNum = (str, dp) => { const n = Number(str); return n ? n.toLocaleString("en-US", { maximumFractionDigits: dp, useGrouping: false }) : "0"; };
+        const refreshBals = async () => {
+          const eEl = $("#ethBal"), tEl = $("#tokBal");
+          if (!account) { if (eEl) eEl.textContent = "connect wallet"; if (tEl) tEl.textContent = "connect wallet"; return; }
+          try { ethBalWei = await ro.getBalance(account); if (eEl) eEl.textContent = (+ethers.formatEther(ethBalWei)).toFixed(5) + " ETH"; } catch {}
+          try { tokBalWei = await tokC.balanceOf(account); if (tEl) tEl.textContent = trimNum(ethers.formatUnits(tokBalWei, 18), 2) + " $" + s.sy; } catch {}
+        };
+        refreshBals();
+        document.addEventListener("wallet:changed", refreshBals);
+        const GAS_RESERVE = ethers.parseEther("0.0004"); // keep a little ETH for gas on Max
+        $("#buyPct").querySelectorAll("button").forEach(b => b.onclick = async () => {
+          if (!account) { await connect(); await refreshBals(); }
+          if (!account) return;
+          const p = BigInt(b.dataset.p);
+          let usable = ethBalWei > GAS_RESERVE ? ethBalWei - GAS_RESERVE : 0n;
+          const budget = usable * p / 100n;
+          const ethIn = budget * 100n / 103n; // buyToken sends value*1.03, so back it out
+          $("#buyAmt").value = ethIn > 0n ? trimNum(ethers.formatEther(ethIn), 6) : "0";
+        });
+        $("#sellPct").querySelectorAll("button").forEach(b => b.onclick = async () => {
+          if (!account) { await connect(); await refreshBals(); }
+          if (!account) return;
+          const amt = tokBalWei * BigInt(b.dataset.p) / 100n;
+          $("#sellAmt").value = amt > 0n ? trimNum(ethers.formatUnits(amt, 18), 6) : "0";
+        });
         $("#buyBtn").onclick = async () => {
           const m = $("#buyMsg"); const amt = $("#buyAmt").value.trim();
           if (!amt || Number(amt) <= 0) { m.textContent = "Enter an ETH amount."; m.className = "msg err"; return; }
@@ -467,7 +541,7 @@ if ($("#collection")) {
             m.textContent = "Buying…"; m.className = "msg";
             await buyToken(s.token, amt);
             m.textContent = "Bought! The tokens are in your wallet."; m.className = "msg ok";
-            setTimeout(refreshPx, 1500);
+            setTimeout(() => { refreshPx(); refreshBals(); }, 1500);
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
         $("#sellBtn").onclick = async () => {
@@ -477,7 +551,7 @@ if ($("#collection")) {
             m.textContent = "Approving + selling…"; m.className = "msg";
             await sellToken(s.token, amt);
             m.textContent = "Sold! ETH is in your wallet."; m.className = "msg ok";
-            setTimeout(refreshPx, 1500);
+            setTimeout(() => { refreshPx(); refreshBals(); }, 1500);
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
         let picked = null;
@@ -538,10 +612,15 @@ if ($("#collection")) {
 if ($("#portfolio")) {
   const box = $("#portfolio");
   $("#pfConnect") && ($("#pfConnect").onclick = async () => { await connect(); load(); });
+  document.addEventListener("wallet:changed", () => load());
   async function load() {
     if (!C.FACTORY) { box.innerHTML = `<p class="empty">Vesper is launching soon.</p>`; return; }
-    if (!account) { await connect(); }
-    if (!account) { box.innerHTML = `<p class="empty">Connect your wallet to see your launches and NFTs.</p>`; return; }
+    await walletReady;
+    if (!account) {
+      box.innerHTML = `<p class="empty">Connect your wallet to see your launches and NFTs.<br><button class="btn primary sm" id="pfGo" style="margin-top:12px">Connect wallet</button></p>`;
+      const g = $("#pfGo"); if (g) g.onclick = async () => { await connect(); load(); };
+      return;
+    }
     box.innerHTML = `<p class="empty">Loading…</p>`;
     try {
       const f = factory(ro);

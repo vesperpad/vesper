@@ -269,6 +269,11 @@ a.tok{color:inherit}
 .chart{width:100%;height:150px;display:block;background:rgba(10,6,13,.5);border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
 .buybox{background:rgba(230,192,105,.05);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px}
 .buybox label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--mut)}
+.buybox label .bal{position:absolute;right:0;top:0;font-size:12px;color:#c9b7a3;font-weight:600}
+.buybox label{position:relative}
+.pctrow{display:flex;gap:6px;margin:-4px 0 2px}
+.pctrow button{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#e9dfce;font-family:var(--sans);font-size:12.5px;font-weight:600;padding:6px 0;border-radius:8px;cursor:pointer;transition:background .15s,border-color .15s}
+.pctrow button:hover{background:rgba(230,192,105,.14);border-color:rgba(230,192,105,.4)}
 
 /* marketplace listings */
 #market .listing{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
