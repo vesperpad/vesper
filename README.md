@@ -2,6 +2,8 @@
 
 The launchpad for Robinhood Chain — where a token launch starts as an NFT mint.
 
+**Website:** [vesperpad.world](https://vesperpad.world) · **X:** [@vesperpad](https://x.com/vesperpad)
+
 A creator deploys an NFT collection. When it mints out, the token launches by itself: a real
 Uniswap V4 market opens and the liquidity is locked forever. Minters receive a locked airdrop, and a
 share of the token's trade fees backs a growing NFT floor — so an active token lifts every NFT.
@@ -40,13 +42,15 @@ web/         static front-end (vanilla Node server + SPA-less multi-page site)
 
 ### Build & test
 
-Built with [Foundry](https://book.getfoundry.sh/). Dependencies: OpenZeppelin, Uniswap v4-core/v4-periphery, Permit2, forge-std.
+Built with [Foundry](https://book.getfoundry.sh/).
 
 ```bash
 cd contracts
-forge install
+forge install foundry-rs/forge-std OpenZeppelin/openzeppelin-contracts Uniswap/v4-periphery
 RH_RPC=<robinhood-chain-rpc> forge test
 ```
+
+Remappings live in `foundry.toml`; `v4-periphery` vendors `v4-core`, `permit2` and `solmate`.
 
 Tests run against a Robinhood Chain fork (Uniswap V4 is already deployed there).
 
