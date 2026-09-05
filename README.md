@@ -66,3 +66,11 @@ Set `window.VESPER.FACTORY` in `web/public/config.js` to the deployed factory ad
 ## Status
 
 Contracts and site are complete and tested on a fork. Not yet deployed to mainnet.
+
+## Deployed (Robinhood Chain)
+
+| Contract | Address |
+|---|---|
+| VesperFactory | `0xB8E089d63aeAfb890F852B9ba74805B39ec40391` |
+| VesperFeeHook | `0x79f4B9FBc9CAF9A885fD9D9fe7A543e70cb580cc` |
+| LaunchDeployer | `0x41dE2EA622847b2875CCF9aB619Dde36A6b9C707` |

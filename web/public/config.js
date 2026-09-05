@@ -8,7 +8,7 @@ window.VESPER = {
     symbol: "ETH",
     explorer: "" // e.g. "https://explorer.robinhood..." — enables address links when set
   },
-  FACTORY: "", // empty => site runs in "launching soon" preview mode
+  FACTORY: "0xB8E089d63aeAfb890F852B9ba74805B39ec40391", // empty => site runs in "launching soon" preview mode
 
   factoryAbi: [
     "function createLaunch(string tokenName, string tokenSymbol, string uri, string nftName, string nftSymbol, uint256 nftSupply, uint256 mintPrice) returns (address)",

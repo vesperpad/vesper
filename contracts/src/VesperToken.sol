@@ -12,9 +12,11 @@ contract VesperToken is ERC20Burnable {
     uint256 public constant TOTAL_SUPPLY = 1_000_000_000e18;
     string private _contractURI;
 
-    constructor(string memory name_, string memory symbol_, string memory contractURI_) ERC20(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_, string memory contractURI_, address to)
+        ERC20(name_, symbol_)
+    {
         _contractURI = contractURI_;
-        _mint(msg.sender, TOTAL_SUPPLY);
+        _mint(to, TOTAL_SUPPLY);
     }
 
     /// @notice ERC-7572 contract-level metadata URI (Irys/HTTP JSON).

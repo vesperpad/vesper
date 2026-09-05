@@ -18,7 +18,7 @@ import {VesperNFT} from "./VesperNFT.sol";
 import {VesperFeeHook} from "./VesperFeeHook.sol";
 import {Airdrop} from "./Airdrop.sol";
 import {FloorVault} from "./FloorVault.sol";
-import {FeeSplitter} from "./FeeSplitter.sol";
+import {LaunchDeployer} from "./LaunchDeployer.sol";
 
 /// @title VesperFactory
 /// @notice NFT-gated launchpad. `createLaunch` deploys an NFT collection; when it mints out the NFT
@@ -30,6 +30,7 @@ contract VesperFactory {
     IPositionManager public immutable positionManager;
     IAllowanceTransfer public immutable permit2;
     VesperFeeHook public immutable hook;
+    LaunchDeployer public immutable dep; // deploys child contracts (keeps factory under 24KB)
     address public immutable devMint; // receives the dev cut of paid mints (20%)
     address public immutable devSecondary; // receives dev cut of royalty + redeem (via FeeSplitter)
     // note: the dev cut of TRADE fees (20%) goes to the hook's own `dev` wallet, set at hook deploy
@@ -59,6 +60,7 @@ contract VesperFactory {
         IPositionManager _positionManager,
         IAllowanceTransfer _permit2,
         VesperFeeHook _hook,
+        LaunchDeployer _dep,
         address _devMint,
         address _devSecondary
     ) {
@@ -67,6 +69,7 @@ contract VesperFactory {
         positionManager = _positionManager;
         permit2 = _permit2;
         hook = _hook;
+        dep = _dep;
         devMint = _devMint;
         devSecondary = _devSecondary;
     }
@@ -90,8 +93,7 @@ contract VesperFactory {
         uint256 mintPrice
     ) external returns (address nft) {
         require(nftSupply > 0, "SUPPLY");
-        VesperNFT c = new VesperNFT(nftName, nftSymbol, uri, address(this), nftSupply, mintPrice);
-        nft = address(c);
+        nft = dep.deployNFT(nftName, nftSymbol, uri, address(this), nftSupply, mintPrice);
         configs[nft] = Config({creator: msg.sender, name: tokenName, symbol: tokenSymbol, uri: uri, done: false});
         allNfts.push(nft);
         emit LaunchCreated(nft, msg.sender, nftSupply, mintPrice);
@@ -113,18 +115,18 @@ contract VesperFactory {
         if (crEth > 0) { (bool a,) = cfg.creator.call{value: crEth}(""); require(a, "CR"); }
         if (devEth > 0) { (bool b,) = devMint.call{value: devEth}(""); require(b, "DEV"); }
 
-        // 2. token (mints 1B here), split airdrop vs LP
-        VesperToken token = new VesperToken(cfg.name, cfg.symbol, cfg.uri);
+        // 2. token (mints 1B to this factory), split airdrop vs LP
+        VesperToken token = VesperToken(dep.deployToken(cfg.name, cfg.symbol, cfg.uri, address(this)));
         uint256 total = token.TOTAL_SUPPLY();
         uint256 airdropAlloc = (total * AIRDROP_BPS) / 10_000;
         uint256 lpTokens = total - airdropAlloc;
 
-        // 3. airdrop + splitter + vault
+        // 3. airdrop + splitter + vault (deployed via helper to keep this factory small)
         uint256 unlock = block.timestamp + LOCK;
-        Airdrop airdrop = new Airdrop(address(this), IERC721(nftAddr), token, unlock);
+        Airdrop airdrop = Airdrop(dep.deployAirdrop(address(this), IERC721(nftAddr), token, unlock));
         token.transfer(address(airdrop), airdropAlloc);
-        FeeSplitter splitter = new FeeSplitter(cfg.creator, devSecondary, 6000);
-        FloorVault vault = new FloorVault(nft, airdrop, address(splitter), unlock);
+        address splitter = dep.deploySplitter(cfg.creator, devSecondary, 6000);
+        FloorVault vault = FloorVault(payable(dep.deployVault(nft, airdrop, splitter, unlock)));
         airdrop.configure(airdropAlloc / nft.maxSupply(), address(vault));
 
         // 4. pool + LP
@@ -139,9 +141,9 @@ contract VesperFactory {
         bool twoSided = _seedPool(key, address(token), lpEth, lpTokens, address(vault));
 
         // 5. wire NFT (also flips it to finalized)
-        nft.wire(address(vault), address(splitter), address(airdrop));
+        nft.wire(address(vault), splitter, address(airdrop));
 
-        launches.push(Launch(nftAddr, address(token), address(vault), address(airdrop), address(splitter)));
+        launches.push(Launch(nftAddr, address(token), address(vault), address(airdrop), splitter));
         launchOf[address(token)] = launches.length;
         finalizedIndex[nftAddr] = launches.length;
         emit LaunchFinalized(nftAddr, address(token), address(vault), address(airdrop), twoSided);

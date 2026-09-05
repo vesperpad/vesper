@@ -19,6 +19,7 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import {VesperFeeHook} from "../src/VesperFeeHook.sol";
 import {VesperFactory} from "../src/VesperFactory.sol";
+import {LaunchDeployer} from "../src/LaunchDeployer.sol";
 import {VesperNFT} from "../src/VesperNFT.sol";
 import {VesperToken} from "../src/VesperToken.sol";
 import {Airdrop} from "../src/Airdrop.sol";
@@ -56,7 +57,8 @@ contract VesperNFTLaunchTest is Test {
             CREATE2_PROXY.call(abi.encodePacked(salt, abi.encodePacked(type(VesperFeeHook).creationCode, args)));
         require(ok && hookAddr.code.length > 0, "hook");
         hook = VesperFeeHook(hookAddr);
-        factory = new VesperFactory(pm, IPositionManager(POSITION_MANAGER), IAllowanceTransfer(PERMIT2), hook, DEV_MINT, DEV_SEC);
+        LaunchDeployer dep = new LaunchDeployer();
+        factory = new VesperFactory(pm, IPositionManager(POSITION_MANAGER), IAllowanceTransfer(PERMIT2), hook, dep, DEV_MINT, DEV_SEC);
         hook.setFactory(address(factory));
     }
 
