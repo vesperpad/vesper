@@ -74,3 +74,4 @@ Live on Robinhood Chain. Contracts deployed and the site is running at [vesperpa
 | VesperFactory | `0xB8E089d63aeAfb890F852B9ba74805B39ec40391` |
 | VesperFeeHook | `0x79f4B9FBc9CAF9A885fD9D9fe7A543e70cb580cc` |
 | LaunchDeployer | `0x41dE2EA622847b2875CCF9aB619Dde36A6b9C707` |
+| Swap router (PoolSwapTest) | `0x569e99E9E8C09C4940a0407aD4E3d8ef90B6d51F` |

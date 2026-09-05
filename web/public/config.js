@@ -5,10 +5,17 @@ window.VESPER = {
     hex: "0x1237",
     name: "Robinhood",
     rpc: "https://robinhood-rpc.publicnode.com",
+    logsRpc: "https://quarrel.lol/rpc",
     symbol: "ETH",
     explorer: "" // e.g. "https://explorer.robinhood..." — enables address links when set
   },
   FACTORY: "0xB8E089d63aeAfb890F852B9ba74805B39ec40391", // empty => site runs in "launching soon" preview mode
+  POOL_MANAGER: "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+  ROUTER: "0x569e99E9E8C09C4940a0407aD4E3d8ef90B6d51F", // PoolSwapTest (buy/sell helper)
+  HOOK: "0x79f4B9FBc9CAF9A885fD9D9fe7A543e70cb580cc",
+  TICK_SPACING: 60,
+  POOLS_SLOT: 6,
+  MIN_SQRT_PRICE: "4295128739",
 
   factoryAbi: [
     "function createLaunch(string tokenName, string tokenSymbol, string uri, string nftName, string nftSymbol, uint256 nftSupply, uint256 mintPrice) returns (address)",
@@ -52,5 +59,12 @@ window.VESPER = {
     "function unlock() view returns (uint256)",
     "function claimed(uint256) view returns (bool)",
     "function claim(uint256 tokenId)"
+  ],
+  poolManagerAbi: [
+    "function extsload(bytes32 slot) view returns (bytes32)",
+    "event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)"
+  ],
+  routerAbi: [
+    "function swap((address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) key,(bool zeroForOne,int256 amountSpecified,uint160 sqrtPriceLimitX96) params,(bool takeClaims,bool settleUsingBurn) testSettings,bytes hookData) payable returns (int256)"
   ]
 };

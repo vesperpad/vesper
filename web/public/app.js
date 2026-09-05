@@ -69,6 +69,7 @@ document.querySelectorAll("[data-connect]").forEach(b => b.onclick = connect);
 
 // ---------- helpers ----------
 const ro = new ethers.JsonRpcProvider(C.chain.rpc);
+const logsRo = new ethers.JsonRpcProvider(C.chain.logsRpc || C.chain.rpc); // for eth_getLogs (events)
 const factory = r => new ethers.Contract(C.FACTORY, C.factoryAbi, r);
 const nftC = (a, r) => new ethers.Contract(a, C.nftAbi, r);
 const esc = s => String(s || "").replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
@@ -97,6 +98,59 @@ async function sendTx(kind, to, method, args, value = 0n) {
   const tx = await signer.sendTransaction({ to, data, value });
   const rc = await tx.wait();
   return { hash: tx.hash, logs: rc.logs };
+}
+
+// ---------- pool price / buy / chart ----------
+function poolKeyOf(token) {
+  return { currency0: ethers.ZeroAddress, currency1: token, fee: 0, tickSpacing: C.TICK_SPACING, hooks: C.HOOK };
+}
+function poolIdOf(token) {
+  const k = poolKeyOf(token);
+  return ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
+    ["address", "address", "uint24", "int24", "address"], [k.currency0, k.currency1, k.fee, k.tickSpacing, k.hooks]));
+}
+async function poolSqrt(token) {
+  try {
+    const pm = new ethers.Contract(C.POOL_MANAGER, C.poolManagerAbi, ro);
+    const base = ethers.keccak256(ethers.solidityPacked(["bytes32", "uint256"], [poolIdOf(token), C.POOLS_SLOT]));
+    const v = BigInt(await pm.extsload(base));
+    return v & ((1n << 160n) - 1n);
+  } catch { return 0n; }
+}
+function priceFromSqrt(sqrt) {
+  if (!sqrt) return { ethPerToken: 0, fdv: 0 };
+  const s = Number(sqrt) / 2 ** 96;
+  const tokenPerEth = s * s;
+  const ethPerToken = tokenPerEth ? 1 / tokenPerEth : 0;
+  return { ethPerToken, fdv: ethPerToken * 1e9 };
+}
+async function buyToken(token, ethInStr) {
+  if (!signer) await connect();
+  if (!signer) throw new Error("Wallet not connected");
+  const ethIn = ethers.parseEther(ethInStr);
+  const params = { zeroForOne: true, amountSpecified: -ethIn, sqrtPriceLimitX96: BigInt(C.MIN_SQRT_PRICE) + 1n };
+  const router = new ethers.Contract(C.ROUTER, C.routerAbi, signer);
+  const tx = await router.swap(poolKeyOf(token), params, { takeClaims: false, settleUsingBurn: false }, "0x", { value: ethIn * 103n / 100n });
+  return await tx.wait();
+}
+async function drawChart(token, canvas) {
+  const pm = new ethers.Contract(C.POOL_MANAGER, C.poolManagerAbi, logsRo);
+  let ev = [];
+  try { const cur = await logsRo.getBlockNumber(); ev = await pm.queryFilter(pm.filters.Swap(poolIdOf(token)), Math.max(0, cur - 200000), cur); } catch {}
+  let pts = ev.map(e => priceFromSqrt(BigInt(e.args.sqrtPriceX96)).ethPerToken).filter(x => x > 0);
+  const cur = priceFromSqrt(await poolSqrt(token)).ethPerToken;
+  if (cur > 0) pts.push(cur);
+  const ctx = canvas.getContext("2d"), W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  if (pts.length < 2) { ctx.fillStyle = "#8f7d84"; ctx.font = "13px Inter,sans-serif"; ctx.fillText("No trades yet", 12, H / 2); return; }
+  const min = Math.min(...pts), max = Math.max(...pts), pad = 8;
+  const x = i => pad + i * (W - 2 * pad) / (pts.length - 1);
+  const y = v => H - pad - (max === min ? 0.5 : (v - min) / (max - min)) * (H - 2 * pad);
+  ctx.strokeStyle = "#e6c069"; ctx.lineWidth = 2; ctx.beginPath();
+  pts.forEach((p, i) => i ? ctx.lineTo(x(i), y(p)) : ctx.moveTo(x(i), y(p)));
+  ctx.stroke();
+  ctx.lineTo(x(pts.length - 1), H - pad); ctx.lineTo(x(0), H - pad); ctx.closePath();
+  ctx.fillStyle = "rgba(230,192,105,.08)"; ctx.fill();
 }
 
 // combined summary for one collection
@@ -216,9 +270,11 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
   async function loadActivity() {
     const box = $("#activity"); if (!box || !C.FACTORY) return;
     try {
-      const f = factory(ro);
-      const created = await f.queryFilter(f.filters.LaunchCreated(), -50000).catch(() => []);
-      const fin = await f.queryFilter(f.filters.LaunchFinalized(), -50000).catch(() => []);
+      const f = factory(logsRo);
+      const cur = await logsRo.getBlockNumber();
+      const from = Math.max(0, cur - 200000);
+      const created = await f.queryFilter(f.filters.LaunchCreated(), from, cur).catch(() => []);
+      const fin = await f.queryFilter(f.filters.LaunchFinalized(), from, cur).catch(() => []);
       const items = [
         ...created.map(e => ({ t: "created", nft: e.args.nft, block: e.blockNumber })),
         ...fin.map(e => ({ t: "launched", nft: e.args.nft, block: e.blockNumber }))
@@ -284,18 +340,21 @@ if ($("#collection")) {
           <p id="mMsg" class="msg"></p>`;
       } else {
         action = `
-          <span class="pill live">Live</span>
+          <div class="tokhead"><span class="pill live">Live</span><span class="pxline" id="pxLine">loading price…</span></div>
+          <canvas id="chart" class="chart" width="620" height="150"></canvas>
+          <div class="buybox">
+            <label>Buy with ETH<input id="buyAmt" class="input" type="number" min="0" step="0.001" placeholder="0.01" /></label>
+            <button id="buyBtn" class="btn primary full">Buy $${esc(s.sy)}</button>
+            <p id="buyMsg" class="msg"></p>
+          </div>
           <ul class="pv-facts">
             ${addrRow("Token", s.token)}${addrRow("Creator", s.creator)}
             <li><span>NFT floor</span><b>${eth(s.floor)} ETH</b></li>
           </ul>
-          <div class="row2">
-            <button id="addBtn" class="btn ghost full">Add token to wallet</button>
-            ${C.chain.explorer ? `<a class="btn ghost full" href="${explLink(s.token)}" target="_blank" rel="noopener">Trade / explorer</a>` : ""}
-          </div>
+          <button id="addBtn" class="btn ghost full">Add token to wallet</button>
           <div class="mini">Your NFT<div id="ownedWrap"><button id="loadOwned" class="btn ghost sm">Show my NFTs</button></div></div>
           <div class="row2">
-            <button id="claimBtn" class="btn primary full" disabled>Claim airdrop</button>
+            <button id="claimBtn" class="btn ghost full" disabled>Claim airdrop</button>
             <button id="redeemBtn" class="btn ghost full" disabled>Redeem to floor</button>
           </div>
           <p id="mMsg" class="msg"></p>`;
@@ -318,6 +377,25 @@ if ($("#collection")) {
         };
       } else {
         $("#addBtn").onclick = () => addToWallet(s.token, s.sy, s.img);
+        // price + chart
+        const refreshPx = async () => {
+          const { ethPerToken, fdv } = priceFromSqrt(await poolSqrt(s.token));
+          const px = $("#pxLine");
+          const fdvTxt = fdv >= 1 ? fdv.toLocaleString(undefined, { maximumFractionDigits: 2 }) : fdv.toPrecision(3);
+          if (px) px.textContent = ethPerToken ? `${ethPerToken.toExponential(3)} ETH · FDV ${fdvTxt} ETH` : "no price yet";
+          const cv = $("#chart"); if (cv) drawChart(s.token, cv);
+        };
+        refreshPx();
+        $("#buyBtn").onclick = async () => {
+          const m = $("#buyMsg"); const amt = $("#buyAmt").value.trim();
+          if (!amt || Number(amt) <= 0) { m.textContent = "Enter an ETH amount."; m.className = "msg err"; return; }
+          try {
+            m.textContent = "Buying…"; m.className = "msg";
+            await buyToken(s.token, amt);
+            m.textContent = "Bought! The tokens are in your wallet."; m.className = "msg ok";
+            setTimeout(refreshPx, 1500);
+          } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
+        };
         let picked = null;
         const setPicked = id => { picked = id; $("#claimBtn").disabled = false; $("#redeemBtn").disabled = false; };
         $("#loadOwned").onclick = async () => {
