@@ -102,7 +102,7 @@ contract VesperNFTLaunchTest is Test {
         assertEq(IERC721(POSITION_MANAGER).balanceOf(DEAD), deadNfts + 1, "LP burned");
         assertEq(creator.balance, crBefore + 0.015 ether, "creator 30%");
         assertEq(DEV_MINT.balance, devBefore + 0.01 ether, "dev 20%");
-        assertGt(POOL_MANAGER.balance, 0, "pool has ETH (two-sided)");
+        assertApproxEqAbs(vault.balance, 0.025 ether, 1e14, "vault seeded with 50% of mint as floor");
 
         PoolKey memory key = _key(token);
         assertEq(hook.creatorOf(key.toId()), creator, "hook creator");

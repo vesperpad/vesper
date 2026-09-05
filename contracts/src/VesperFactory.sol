@@ -107,11 +107,11 @@ contract VesperFactory {
         VesperNFT nft = VesperNFT(nftAddr);
         require(nft.totalMinted() == nft.maxSupply(), "NOT_SOLD_OUT");
 
-        // 1. pull raised ETH, split LP50 / creator30 / dev20
+        // 1. pull raised ETH, split floor50 / creator30 / dev20 (floor share seeds the NFT vault)
         uint256 raised = nft.sweepTo(address(this));
-        uint256 lpEth = (raised * 50) / 100;
+        uint256 floorEth = (raised * 50) / 100;
         uint256 crEth = (raised * 30) / 100;
-        uint256 devEth = raised - lpEth - crEth;
+        uint256 devEth = raised - floorEth - crEth;
         if (crEth > 0) { (bool a,) = cfg.creator.call{value: crEth}(""); require(a, "CR"); }
         if (devEth > 0) { (bool b,) = devMint.call{value: devEth}(""); require(b, "DEV"); }
 
@@ -128,8 +128,10 @@ contract VesperFactory {
         address splitter = dep.deploySplitter(cfg.creator, devSecondary, 6000);
         FloorVault vault = FloorVault(payable(dep.deployVault(nft, airdrop, splitter, unlock)));
         airdrop.configure(airdropAlloc / nft.maxSupply(), address(vault));
+        // seed the NFT floor with the mint's floor share
+        if (floorEth > 0) { (bool okv,) = address(vault).call{value: floorEth}(""); require(okv, "FLOOR"); }
 
-        // 4. pool + LP
+        // 4. pool + LP — single-sided at the fixed FDV so every token opens at the same valuation
         PoolKey memory key = PoolKey({
             currency0: Currency.wrap(address(0)),
             currency1: Currency.wrap(address(token)),
@@ -138,7 +140,7 @@ contract VesperFactory {
             hooks: IHooks(address(hook))
         });
         hook.registerPool(key, cfg.creator, address(vault));
-        bool twoSided = _seedPool(key, address(token), lpEth, lpTokens, address(vault));
+        _seedPool(key, address(token), lpTokens);
 
         // 5. wire NFT (also flips it to finalized)
         nft.wire(address(vault), splitter, address(airdrop));
@@ -146,41 +148,15 @@ contract VesperFactory {
         launches.push(Launch(nftAddr, address(token), address(vault), address(airdrop), splitter));
         launchOf[address(token)] = launches.length;
         finalizedIndex[nftAddr] = launches.length;
-        emit LaunchFinalized(nftAddr, address(token), address(vault), address(airdrop), twoSided);
+        emit LaunchFinalized(nftAddr, address(token), address(vault), address(airdrop), false);
     }
 
-    /// @dev Seeds and locks liquidity. Paid mint => two-sided full-range (ETH + token); free mint =>
-    ///      single-sided token-only at the FDV reference. Returns whether it was two-sided.
-    function _seedPool(PoolKey memory key, address token, uint256 lpEth, uint256 lpTokens, address vault)
-        internal
-        returns (bool twoSided)
-    {
+    /// @dev Seeds and locks single-sided liquidity: all `lpTokens` at the fixed FDV reference tick,
+    ///      so the token opens at FDV ~1.8 ETH and buyers push the price up from there.
+    function _seedPool(PoolKey memory key, address token, uint256 lpTokens) internal {
         IERC20(token).approve(address(permit2), type(uint256).max);
         permit2.approve(token, address(positionManager), type(uint160).max, type(uint48).max);
-
-        if (lpEth > 0) {
-            twoSided = true;
-            // init at the price implied by the deposited amounts (token per ETH), full range
-            uint256 tokenPerEth = lpTokens / lpEth; // whole tokens per whole ETH (both 1e18-scaled)
-            uint160 sqrtP = _sqrtPriceForTokenPerEth(tokenPerEth);
-            poolManager.initialize(key, sqrtP);
-            int24 tickLower = TickMath.minUsableTick(TICK_SPACING);
-            int24 tickUpper = TickMath.maxUsableTick(TICK_SPACING);
-            uint128 liq = LiquidityAmounts.getLiquidityForAmounts(
-                sqrtP, TickMath.getSqrtPriceAtTick(tickLower), TickMath.getSqrtPriceAtTick(tickUpper), lpEth, lpTokens
-            );
-            // MINT + SETTLE_PAIR + SWEEP (refund unused native ETH to the factory)
-            bytes memory actions =
-                abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR), uint8(Actions.SWEEP));
-            bytes[] memory params = new bytes[](3);
-            params[0] = abi.encode(
-                key, tickLower, tickUpper, uint256(liq), type(uint128).max, type(uint128).max, DEAD, bytes("")
-            );
-            params[1] = abi.encode(key.currency0, key.currency1);
-            params[2] = abi.encode(key.currency0, address(this));
-            positionManager.modifyLiquidities{value: lpEth}(abi.encode(actions, params), block.timestamp + 300);
-        } else {
-            twoSided = false;
+        {
             uint256 tokenPerEth = (1_000_000_000 * 100) / FDV_X100;
             uint160 sqrtLaunch = _sqrtPriceForTokenPerEth(tokenPerEth);
             int24 tickUpper = (TickMath.getTickAtSqrtPrice(sqrtLaunch) / TICK_SPACING) * TICK_SPACING;
@@ -197,12 +173,9 @@ contract VesperFactory {
             params[1] = abi.encode(key.currency0, key.currency1);
             positionManager.modifyLiquidities(abi.encode(actions, params), block.timestamp + 300);
         }
-
-        // sweep leftovers: unused token -> burn (deflationary); unused ETH -> vault (bonus floor)
+        // burn any dust token left over from the single-sided seed (deflationary)
         uint256 leftTok = IERC20(token).balanceOf(address(this));
         if (leftTok > 0) VesperToken(token).burn(leftTok);
-        uint256 leftEth = address(this).balance;
-        if (leftEth > 0) { (bool ok,) = vault.call{value: leftEth}(""); require(ok, "SWEEP_ETH"); }
     }
 
     function _sqrtPriceForTokenPerEth(uint256 tokenPerEth) internal pure returns (uint160) {

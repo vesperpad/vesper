@@ -42,7 +42,8 @@ contract Deploy is Script {
         require(ok && hookAddr.code.length > 0, "hook deploy");
         VesperFeeHook hook = VesperFeeHook(hookAddr);
 
-        LaunchDeployer dep = new LaunchDeployer();
+        address depEnv = vm.envOr("DEP", address(0));
+        LaunchDeployer dep = depEnv != address(0) ? LaunchDeployer(depEnv) : new LaunchDeployer();
         VesperFactory factory = new VesperFactory(
             pm, IPositionManager(POSITION_MANAGER), IAllowanceTransfer(PERMIT2), hook, dep, feesMint, feesSecondary
         );

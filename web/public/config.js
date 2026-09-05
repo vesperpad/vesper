@@ -9,13 +9,14 @@ window.VESPER = {
     symbol: "ETH",
     explorer: "" // e.g. "https://explorer.robinhood..." — enables address links when set
   },
-  FACTORY: "0xB8E089d63aeAfb890F852B9ba74805B39ec40391", // empty => site runs in "launching soon" preview mode
+  FACTORY: "0x9a86E62BD2fe67220a8161099868406912F48D71", // empty => site runs in "launching soon" preview mode
   POOL_MANAGER: "0x8366a39CC670B4001A1121B8F6A443A643e40951",
   ROUTER: "0x569e99E9E8C09C4940a0407aD4E3d8ef90B6d51F", // PoolSwapTest (buy/sell helper)
-  HOOK: "0x79f4B9FBc9CAF9A885fD9D9fe7A543e70cb580cc",
+  HOOK: "0xFd9EDa1DC25Df6fEC433Df778940D100a33a40cC",
   TICK_SPACING: 60,
   POOLS_SLOT: 6,
   MIN_SQRT_PRICE: "4295128739",
+  MAX_SQRT_PRICE: "1461446703485210103287273052203988822378723970342",
 
   factoryAbi: [
     "function createLaunch(string tokenName, string tokenSymbol, string uri, string nftName, string nftSymbol, uint256 nftSupply, uint256 mintPrice) returns (address)",

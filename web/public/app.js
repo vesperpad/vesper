@@ -133,6 +133,18 @@ async function buyToken(token, ethInStr) {
   const tx = await router.swap(poolKeyOf(token), params, { takeClaims: false, settleUsingBurn: false }, "0x", { value: ethIn * 103n / 100n });
   return await tx.wait();
 }
+async function sellToken(token, amtStr) {
+  if (!signer) await connect();
+  if (!signer) throw new Error("Wallet not connected");
+  const amt = ethers.parseUnits(amtStr, 18);
+  const owner = await signer.getAddress();
+  const erc = new ethers.Contract(token, ["function allowance(address,address) view returns (uint256)", "function approve(address,uint256) returns (bool)", "function balanceOf(address) view returns (uint256)"], signer);
+  if ((await erc.allowance(owner, C.ROUTER)) < amt) { const ap = await erc.approve(C.ROUTER, ethers.MaxUint256); await ap.wait(); }
+  const params = { zeroForOne: false, amountSpecified: -amt, sqrtPriceLimitX96: BigInt(C.MAX_SQRT_PRICE) - 1n };
+  const router = new ethers.Contract(C.ROUTER, C.routerAbi, signer);
+  const tx = await router.swap(poolKeyOf(token), params, { takeClaims: false, settleUsingBurn: false }, "0x");
+  return await tx.wait();
+}
 async function drawChart(token, canvas) {
   const pm = new ethers.Contract(C.POOL_MANAGER, C.poolManagerAbi, logsRo);
   let ev = [];
@@ -345,6 +357,8 @@ if ($("#collection")) {
           <div class="buybox">
             <label>Buy with ETH<input id="buyAmt" class="input" type="number" min="0" step="0.001" placeholder="0.01" /></label>
             <button id="buyBtn" class="btn primary full">Buy $${esc(s.sy)}</button>
+            <label>Sell $${esc(s.sy)} (amount)<input id="sellAmt" class="input" type="number" min="0" placeholder="1000000" /></label>
+            <button id="sellBtn" class="btn ghost full">Sell $${esc(s.sy)}</button>
             <p id="buyMsg" class="msg"></p>
           </div>
           <ul class="pv-facts">
@@ -355,7 +369,7 @@ if ($("#collection")) {
           <div class="mini">Your NFT<div id="ownedWrap"><button id="loadOwned" class="btn ghost sm">Show my NFTs</button></div></div>
           <div class="row2">
             <button id="claimBtn" class="btn ghost full" disabled>Claim airdrop</button>
-            <button id="redeemBtn" class="btn ghost full" disabled>Redeem to floor</button>
+            <button id="redeemBtn" class="btn ghost full" disabled>Sell NFT → floor</button>
           </div>
           <p id="mMsg" class="msg"></p>`;
       }
@@ -393,6 +407,16 @@ if ($("#collection")) {
             m.textContent = "Buying…"; m.className = "msg";
             await buyToken(s.token, amt);
             m.textContent = "Bought! The tokens are in your wallet."; m.className = "msg ok";
+            setTimeout(refreshPx, 1500);
+          } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
+        };
+        $("#sellBtn").onclick = async () => {
+          const m = $("#buyMsg"); const amt = $("#sellAmt").value.trim();
+          if (!amt || Number(amt) <= 0) { m.textContent = "Enter an amount to sell."; m.className = "msg err"; return; }
+          try {
+            m.textContent = "Approving + selling…"; m.className = "msg";
+            await sellToken(s.token, amt);
+            m.textContent = "Sold! ETH is in your wallet."; m.className = "msg ok";
             setTimeout(refreshPx, 1500);
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
