@@ -110,4 +110,11 @@ Redeem a $10 floor at 3% → $0.30 fee (creator $0.18, dev $0.12), redeemer nets
 - Royalty: 5% (creator/dev 60/40)
 - Dev revenue: 20% trade fees + 20% mint + 40% of (royalty & redeem fees)
 
+**Dev fee wallets are separated by stream** (each goes to its own wallet):
+- **fees-trade** = the hook's `dev` (set at hook deploy) — receives the 20% dev cut of trade fees
+- **fees-mint** = factory `devMint` — receives the 20% dev cut of paid mints
+- **fees-secondary** = factory `devSecondary` (used by each FeeSplitter) — receives the dev share of royalties + redeem fees
+Plus a **deployer** wallet (pays deploy gas; is the hook `owner`, only used once for `setFactory`).
+Total wallets to run Vesper: **4** (deployer + 3 fee wallets).
+
 Public story: fair-launch — no bonding curve, no premine, LP burned, creator keeps the majority of fees.

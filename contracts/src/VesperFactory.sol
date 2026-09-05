@@ -30,7 +30,9 @@ contract VesperFactory {
     IPositionManager public immutable positionManager;
     IAllowanceTransfer public immutable permit2;
     VesperFeeHook public immutable hook;
-    address public immutable dev; // treasury
+    address public immutable devMint; // receives the dev cut of paid mints (20%)
+    address public immutable devSecondary; // receives dev cut of royalty + redeem (via FeeSplitter)
+    // note: the dev cut of TRADE fees (20%) goes to the hook's own `dev` wallet, set at hook deploy
 
     address public constant DEAD = 0x000000000000000000000000000000000000dEaD;
     int24 public constant TICK_SPACING = 60;
@@ -57,14 +59,16 @@ contract VesperFactory {
         IPositionManager _positionManager,
         IAllowanceTransfer _permit2,
         VesperFeeHook _hook,
-        address _dev
+        address _devMint,
+        address _devSecondary
     ) {
-        require(_dev != address(0), "ZERO");
+        require(_devMint != address(0) && _devSecondary != address(0), "ZERO");
         poolManager = _poolManager;
         positionManager = _positionManager;
         permit2 = _permit2;
         hook = _hook;
-        dev = _dev;
+        devMint = _devMint;
+        devSecondary = _devSecondary;
     }
 
     function launchesLength() external view returns (uint256) {
@@ -107,7 +111,7 @@ contract VesperFactory {
         uint256 crEth = (raised * 30) / 100;
         uint256 devEth = raised - lpEth - crEth;
         if (crEth > 0) { (bool a,) = cfg.creator.call{value: crEth}(""); require(a, "CR"); }
-        if (devEth > 0) { (bool b,) = dev.call{value: devEth}(""); require(b, "DEV"); }
+        if (devEth > 0) { (bool b,) = devMint.call{value: devEth}(""); require(b, "DEV"); }
 
         // 2. token (mints 1B here), split airdrop vs LP
         VesperToken token = new VesperToken(cfg.name, cfg.symbol, cfg.uri);
@@ -119,7 +123,7 @@ contract VesperFactory {
         uint256 unlock = block.timestamp + LOCK;
         Airdrop airdrop = new Airdrop(address(this), IERC721(nftAddr), token, unlock);
         token.transfer(address(airdrop), airdropAlloc);
-        FeeSplitter splitter = new FeeSplitter(cfg.creator, dev, 6000);
+        FeeSplitter splitter = new FeeSplitter(cfg.creator, devSecondary, 6000);
         FloorVault vault = new FloorVault(nft, airdrop, address(splitter), unlock);
         airdrop.configure(airdropAlloc / nft.maxSupply(), address(vault));
 

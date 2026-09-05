@@ -32,7 +32,9 @@ contract VesperNFTLaunchTest is Test {
     address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     address constant CREATE2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
     address constant DEAD = 0x000000000000000000000000000000000000dEaD;
-    address constant DEVV = 0x00000000000000000000000000000000dE00DE00;
+    address constant DEV_TRADE = 0x00000000000000000000000000000000DEAD0001;
+    address constant DEV_MINT = 0x00000000000000000000000000000000DEAD0002;
+    address constant DEV_SEC = 0x00000000000000000000000000000000DEad0003;
 
     IPoolManager pm = IPoolManager(POOL_MANAGER);
     VesperFeeHook hook;
@@ -48,13 +50,13 @@ contract VesperNFTLaunchTest is Test {
             Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG | Hooks.AFTER_SWAP_FLAG
                 | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG
         );
-        bytes memory args = abi.encode(pm, DEVV, address(this));
+        bytes memory args = abi.encode(pm, DEV_TRADE, address(this));
         (address hookAddr, bytes32 salt) = HookMiner.find(CREATE2_PROXY, flags, type(VesperFeeHook).creationCode, args);
         (bool ok,) =
             CREATE2_PROXY.call(abi.encodePacked(salt, abi.encodePacked(type(VesperFeeHook).creationCode, args)));
         require(ok && hookAddr.code.length > 0, "hook");
         hook = VesperFeeHook(hookAddr);
-        factory = new VesperFactory(pm, IPositionManager(POSITION_MANAGER), IAllowanceTransfer(PERMIT2), hook, DEVV);
+        factory = new VesperFactory(pm, IPositionManager(POSITION_MANAGER), IAllowanceTransfer(PERMIT2), hook, DEV_MINT, DEV_SEC);
         hook.setFactory(address(factory));
     }
 
@@ -79,7 +81,7 @@ contract VesperNFTLaunchTest is Test {
         );
 
         uint256 crBefore = creator.balance;
-        uint256 devBefore = DEVV.balance;
+        uint256 devBefore = DEV_MINT.balance;
         uint256 deadNfts = IERC721(POSITION_MANAGER).balanceOf(DEAD);
 
         for (uint256 i = 0; i < NFT_SUPPLY; i++) {
@@ -97,7 +99,7 @@ contract VesperNFTLaunchTest is Test {
         assertGt(IERC20(token).balanceOf(POOL_MANAGER), 800_000_000 ether, "pool holds most tokens");
         assertEq(IERC721(POSITION_MANAGER).balanceOf(DEAD), deadNfts + 1, "LP burned");
         assertEq(creator.balance, crBefore + 0.015 ether, "creator 30%");
-        assertEq(DEVV.balance, devBefore + 0.01 ether, "dev 20%");
+        assertEq(DEV_MINT.balance, devBefore + 0.01 ether, "dev 20%");
         assertGt(POOL_MANAGER.balance, 0, "pool has ETH (two-sided)");
 
         PoolKey memory key = _key(token);
@@ -125,7 +127,7 @@ contract VesperNFTLaunchTest is Test {
         address buyer = makeAddr("buyer");
         vm.deal(buyer, 10 ether);
         uint256 crEthBefore = creator.balance;
-        uint256 devEthBefore = DEVV.balance;
+        uint256 devEthBefore = DEV_TRADE.balance;
         uint256 vaultBefore = vault.balance;
         uint256 amountIn = 0.1 ether;
         SwapParams memory sp = SwapParams({
@@ -140,7 +142,7 @@ contract VesperNFTLaunchTest is Test {
         uint256 feeTotal = (amountIn * 250) / 10_000; // 0.0025
         assertApproxEqAbs(creator.balance - crEthBefore, feeTotal * 50 / 100, 1e13, "creator 50% fee");
         assertApproxEqAbs(vault.balance - vaultBefore, feeTotal * 30 / 100, 1e13, "vault 30% fee");
-        assertApproxEqAbs(DEVV.balance - devEthBefore, feeTotal * 20 / 100, 1e13, "dev 20% fee");
+        assertApproxEqAbs(DEV_TRADE.balance - devEthBefore, feeTotal * 20 / 100, 1e13, "dev 20% fee");
         assertGt(IERC20(token).balanceOf(buyer), 0, "buyer got tokens");
 
         // redeem NFT #2 to floor
