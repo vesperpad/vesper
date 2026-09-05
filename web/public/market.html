@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Collection — Vesper</title>
+<title>Market — Vesper</title>
 <link rel="icon" type="image/png" href="/favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,24 +15,34 @@
   <a class="brand" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
   <nav class="nav-links">
     <a href="/">Home</a>
-    <a href="/explore">Explore</a><a href="/market">Market</a>
+    <a href="/explore">Explore</a>
+    <a href="/market" class="active">Market</a>
     <a href="/launch">Launch</a>
     <a href="/portfolio">Portfolio</a>
   </nav>
   <button class="btn primary sm" data-connect>Connect wallet</button>
 </header>
 
-<main class="sub"><div class="wrap narrow">
-  <div id="collection"><p class="empty">Loading…</p></div>
+<main class="sub"><div class="wrap">
+  <div class="page-head">
+    <p class="eyebrow">Market</p>
+    <h1>NFT marketplace</h1>
+    <p class="muted">Buy Vesper NFTs listed by holders. Each one carries its airdrop and a growing floor.</p>
+  </div>
+  <div class="ex-controls">
+    <div></div>
+    <button id="refresh" class="btn ghost sm">Refresh</button>
+  </div>
+  <div id="marketGrid" class="grid" style="margin-top:18px"><p class="empty">Loading…</p></div>
 </div></main>
 
 <footer class="site-foot">
   <div class="wrap foot-grid">
     <div class="foot-brand">
       <a class="brand-sm" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
-      <p class="muted">The launchpad for Robinhood Chain. Mint an NFT, launch a token, keep the fees.</p>
+      <p class="muted">The launchpad for Robinhood Chain. Mint an NFT, launch a token, and keep the fees.</p>
     </div>
-    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/market">Market</a><a href="/portfolio">Portfolio</a><a href="/how">How it works</a></div>
+    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/market">Market</a><a href="/portfolio">Portfolio</a></div>
     <div class="foot-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/faq">FAQ</a></div>
     <div class="foot-col"><h4>Community</h4><a href="https://x.com/vesperpad" target="_blank" rel="noopener">X / Twitter</a><a href="https://github.com/vesperpad/vesper" target="_blank" rel="noopener">GitHub</a></div>
   </div>

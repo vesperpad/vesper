@@ -538,5 +538,46 @@ if ($("#portfolio")) {
   load();
 }
 
+// ================= MARKET (global listings) =================
+if ($("#marketGrid")) {
+  const grid = $("#marketGrid");
+  async function load() {
+    if (!C.FACTORY || !C.MARKET) { grid.innerHTML = `<p class="empty">Marketplace launching soon.</p>`; return; }
+    grid.innerHTML = `<p class="empty">Loading…</p>`;
+    try {
+      const mkt = new ethers.Contract(C.MARKET, C.marketAbi, logsRo);
+      const read = new ethers.Contract(C.MARKET, C.marketAbi, ro);
+      let ev = [];
+      try { const cur = await logsRo.getBlockNumber(); ev = await mkt.queryFilter(mkt.filters.Listed(), Math.max(0, cur - 200000), cur); } catch {}
+      const seen = new Set(), items = [];
+      for (const e of ev.reverse()) {
+        const nft = e.args.nft, id = Number(e.args.tokenId), k = nft + "-" + id;
+        if (seen.has(k)) continue; seen.add(k);
+        try { const l = await read.listings(nft, id); if (l.seller !== ethers.ZeroAddress) items.push({ nft, id, price: l.price }); } catch {}
+      }
+      if (!items.length) { grid.innerHTML = `<p class="empty">No NFTs listed for sale yet.</p>`; return; }
+      const metaCache = {};
+      const cards = await Promise.all(items.map(async it => {
+        if (!metaCache[it.nft]) { const c = nftC(it.nft, ro); metaCache[it.nft] = { nm: await c.name().catch(() => "NFT"), img: await metaImg(await c.contractURI().catch(() => "")) }; }
+        const m = metaCache[it.nft];
+        return `<div class="tok">
+          <img src="${m.img || "/logo-placeholder.svg"}" onerror="this.src='/logo-placeholder.svg'"/>
+          <div><div class="nm">${esc(m.nm)} #${it.id}</div><div class="sy">${eth(it.price)} ETH</div></div>
+          <div class="row2"><a class="btn ghost sm" href="/collection?a=${it.nft}">View</a><button class="btn primary sm" data-nft="${it.nft}" data-id="${it.id}" data-px="${it.price}">Buy</button></div>
+        </div>`;
+      }));
+      grid.innerHTML = cards.join("");
+      grid.querySelectorAll("[data-nft]").forEach(b => b.onclick = async () => {
+        try { if (!signer) await connect(); b.textContent = "…";
+          await buyNFT(b.dataset.nft, Number(b.dataset.id), BigInt(b.dataset.px));
+          b.textContent = "Bought"; load();
+        } catch (e) { b.textContent = "Buy"; alert(e.shortMessage || e.message); }
+      });
+    } catch { grid.innerHTML = `<p class="empty">Could not load listings.</p>`; }
+  }
+  if ($("#refresh")) $("#refresh").onclick = load;
+  load();
+}
+
 // boot
 if (window.ethereum && window.ethereum.selectedAddress) connect().catch(() => {});

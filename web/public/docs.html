@@ -15,7 +15,7 @@
   <a class="brand" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
   <nav class="nav-links">
     <a href="/">Home</a>
-    <a href="/explore">Explore</a>
+    <a href="/explore">Explore</a><a href="/market">Market</a>
     <a href="/launch">Launch</a>
     <a href="/portfolio">Portfolio</a>
   </nav>
@@ -43,14 +43,14 @@
     <h3>Minting</h3>
     <ul>
       <li><b>1 per wallet.</b> Mint is free or paid, set by the creator.</li>
-      <li><b>Paid mints</b> are split <b>LP 50% / creator 30% / dev 20%</b>. The LP share seeds the token's liquidity.</li>
+      <li><b>Paid mints</b> are split <b>floor 50% / creator 30% / dev 20%</b>. The floor share seeds the NFT floor vault.</li>
       <li>When the last NFT is minted, the token launches automatically.</li>
     </ul>
 
     <h3>Token &amp; liquidity</h3>
     <ul>
       <li><b>Supply:</b> 1,000,000,000. <b>10%</b> goes to minters as a locked airdrop; <b>90%</b> seeds the LP.</li>
-      <li><b>Liquidity</b> is two-sided (ETH + token) for paid mints, single-sided for free mints, and the LP position is burned, so it can never be pulled.</li>
+      <li><b>Liquidity</b> is seeded single-sided at a fixed opening valuation (FDV ~1.8 ETH) and the LP position is burned, so it can never be pulled.</li>
       <li><b>Pair:</b> ETH on Uniswap V4.</li>
     </ul>
 
@@ -82,7 +82,7 @@
       <a class="brand-sm" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
       <p class="muted">The launchpad for Robinhood Chain. Mint an NFT, launch a token, and keep the fees.</p>
     </div>
-    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/portfolio">Portfolio</a><a href="/how">How it works</a></div>
+    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/market">Market</a><a href="/portfolio">Portfolio</a><a href="/how">How it works</a></div>
     <div class="foot-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/faq">FAQ</a></div>
     <div class="foot-col"><h4>Community</h4><a href="https://x.com/vesperpad" target="_blank" rel="noopener">X / Twitter</a><a href="https://github.com/vesperpad/vesper" target="_blank" rel="noopener">GitHub</a></div>
   </div>
