@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Launch — Vesper</title>
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css?v=7" />
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
+  <nav class="nav-links">
+    <a href="/">Home</a>
+    <a href="/explore">Explore</a>
+    <a href="/launch" class="active">Launch</a>
+    <a href="/how">How it works</a>
+    <a href="/docs">Docs</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+  <button class="btn primary sm" data-connect>Connect wallet</button>
+</header>
+
+<main class="sub"><div class="wrap">
+  <div class="page-head">
+    <p class="eyebrow">Launch</p>
+    <h1>Create a launch</h1>
+    <p class="muted">Deploy an NFT collection. When it mints out, your token auto-launches with a locked Uniswap market and the minters get a locked airdrop.</p>
+  </div>
+
+  <div class="create-grid">
+    <form id="launchForm" class="card form">
+      <p class="form-sec">Token</p>
+      <div class="row">
+        <label>Name<input id="f-name" class="input" maxlength="32" placeholder="Vesper Cat" required /></label>
+        <label>Symbol<input id="f-symbol" class="input" maxlength="10" placeholder="VCAT" required /></label>
+      </div>
+      <label>Description<textarea id="f-desc" class="input" maxlength="280" placeholder="What is it?"></textarea></label>
+      <label class="file">Logo
+        <input id="f-logo" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required />
+        <span id="logoName" class="muted">PNG / JPG / WEBP, max 5MB</span>
+      </label>
+      <div class="row">
+        <label>Twitter (optional)<input id="f-twitter" class="input" placeholder="https://x.com/..." /></label>
+        <label>Website (optional)<input id="f-website" class="input" placeholder="https://..." /></label>
+      </div>
+
+      <p class="form-sec">NFT collection</p>
+      <div class="row">
+        <label>NFT name<input id="f-nftname" class="input" maxlength="32" placeholder="Vesper Cat NFT" /></label>
+        <label>NFT symbol<input id="f-nftsymbol" class="input" maxlength="10" placeholder="VCATN" /></label>
+      </div>
+      <div class="row">
+        <label>Supply<input id="f-nftsupply" class="input" type="number" min="1" value="1000" /></label>
+        <label>Mint price (ETH, 0 = free)<input id="f-price" class="input" type="number" min="0" step="0.001" placeholder="0.005" /></label>
+      </div>
+
+      <button id="launchBtn" type="submit" class="btn primary full">Create launch</button>
+      <p id="formMsg" class="msg"></p>
+    </form>
+
+    <aside class="card preview">
+      <p class="eyebrow">Live preview</p>
+      <div class="tok big">
+        <img id="pvImg" src="/logo-placeholder.svg" alt="" />
+        <div><div class="nm" id="pvName">Your token</div><div class="sy" id="pvSym">$SYMBOL</div></div>
+      </div>
+      <ul class="pv-facts">
+        <li><span>Mint price</span><b id="pvMint">Free</b></li>
+        <li><span>Collection</span><b id="pvSupply">1000 NFTs</b></li>
+        <li><span>Airdrop</span><b>10% to minters (1-mo lock)</b></li>
+        <li><span>Liquidity</span><b>Locked at launch</b></li>
+        <li><span>Fees</span><b>Creator 50 · Vault 30 · Dev 20</b></li>
+      </ul>
+    </aside>
+  </div>
+</div></main>
+
+<footer class="site-foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <a class="brand-sm" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
+      <p class="muted">The launchpad for Robinhood Chain. Mint an NFT, launch a token, keep the fees.</p>
+    </div>
+    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/how">How it works</a></div>
+    <div class="foot-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/faq">FAQ</a></div>
+    <div class="foot-col"><h4>Community</h4><a href="https://x.com/vesperpad" target="_blank" rel="noopener">X / Twitter</a></div>
+  </div>
+  <div class="wrap foot-bottom"><span class="muted">© 2026 Vesper</span><span class="muted">Robinhood Chain · Uniswap V4</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script src="/config.js"></script>
+<script src="/app.js?v=7"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Docs — Vesper</title>
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css?v=7" />
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
+  <nav class="nav-links">
+    <a href="/">Home</a>
+    <a href="/explore">Explore</a>
+    <a href="/launch">Launch</a>
+    <a href="/how">How it works</a>
+    <a href="/docs" class="active">Docs</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+  <button class="btn primary sm" data-connect>Connect wallet</button>
+</header>
+
+<main class="sub"><div class="wrap narrow">
+  <div class="page-head">
+    <p class="eyebrow">Docs</p>
+    <h1>Documentation</h1>
+    <p class="muted">How the NFT-gated launch works, end to end.</p>
+  </div>
+
+  <article class="doc">
+    <h3>Overview</h3>
+    <p>On Vesper, a token launch is gated by an NFT mint. A creator deploys an NFT collection; when it mints out, the token deploys automatically with a locked Uniswap V4 market. Minters receive a locked airdrop, and a share of the token's trade fees backs an NFT floor vault.</p>
+
+    <h3>Creating a launch</h3>
+    <ol>
+      <li>Open <a href="/launch">Launch</a> and connect your wallet.</li>
+      <li>Set token details (name, symbol, logo) and NFT details (name, symbol, supply, mint price).</li>
+      <li>Confirm the transaction — your NFT collection goes live and gets a mint page.</li>
+    </ol>
+
+    <h3>Minting</h3>
+    <ul>
+      <li><b>1 per wallet.</b> Mint is free or paid, set by the creator.</li>
+      <li><b>Paid mints</b> are split <b>LP 50% / creator 30% / dev 20%</b>. The LP share seeds the token's liquidity.</li>
+      <li>When the last NFT is minted, the token launches automatically.</li>
+    </ul>
+
+    <h3>Token &amp; liquidity</h3>
+    <ul>
+      <li><b>Supply:</b> 1,000,000,000. <b>10%</b> goes to minters as a locked airdrop; <b>90%</b> seeds the LP.</li>
+      <li><b>Liquidity</b> is two-sided (ETH + token) for paid mints, single-sided for free mints, and the LP position is burned — it can never be pulled.</li>
+      <li><b>Pair:</b> ETH on Uniswap V4.</li>
+    </ul>
+
+    <h3>Airdrop</h3>
+    <p>10% of supply is split equally across the NFTs and locked for one month. The claim is attached to the NFT tokenId — whoever holds the NFT at claim time claims it. Redeeming an NFT before claiming burns its unclaimed share.</p>
+
+    <h3>Trade fees &amp; the floor vault</h3>
+    <p>Every trade pays 2.5% in ETH each way, split <b>creator 50% / NFT vault 30% / dev 20%</b>. The vault's ETH backs the NFTs: floor = vault balance ÷ NFT supply. The more the token trades, the higher the floor — so an active token lifts every NFT.</p>
+
+    <h3>Exiting an NFT</h3>
+    <ul>
+      <li><b>Redeem</b> to the floor anytime after the lock: burn the NFT for its floor share minus a 3% fee. Always available, no buyer needed.</li>
+      <li><b>Sell</b> on a marketplace at any price; a 5% royalty applies.</li>
+    </ul>
+
+    <h3>Network</h3>
+    <p>Vesper runs on Robinhood Chain. Add the network automatically when you connect.</p>
+  </article>
+
+  <div class="cta-band" style="margin-top:30px">
+    <div><h2>Ready to launch?</h2><p class="muted">Create a collection and let it mint out.</p></div>
+    <a href="/launch" class="btn primary">Create a launch</a>
+  </div>
+</div></main>
+
+<footer class="site-foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <a class="brand-sm" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
+      <p class="muted">The launchpad for Robinhood Chain. Mint an NFT, launch a token, and keep the fees.</p>
+    </div>
+    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/how">How it works</a></div>
+    <div class="foot-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/faq">FAQ</a></div>
+    <div class="foot-col"><h4>Community</h4><a href="https://x.com/vesperpad" target="_blank" rel="noopener">X / Twitter</a></div>
+  </div>
+  <div class="wrap foot-bottom"><span class="muted">© 2026 Vesper</span><span class="muted">Robinhood Chain · Uniswap V4</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script src="/config.js"></script>
+<script src="/app.js?v=7"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How it works — Vesper</title>
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css?v=7" />
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
+  <nav class="nav-links">
+    <a href="/">Home</a>
+    <a href="/explore">Explore</a>
+    <a href="/launch">Launch</a>
+    <a href="/how" class="active">How it works</a>
+    <a href="/docs">Docs</a>
+    <a href="/faq">FAQ</a>
+  </nav>
+  <button class="btn primary sm" data-connect>Connect wallet</button>
+</header>
+
+<main class="sub"><div class="wrap">
+  <div class="page-head">
+    <p class="eyebrow">How it works</p>
+    <h1>An NFT mint that launches a token</h1>
+    <p class="muted">The collection is a fair presale, an airdrop ticket, and a fee-backed floor — all in one.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step"><span class="num">1</span><b>Create the collection</b><p>Set your token details and an NFT collection: supply and a free or paid mint (1 per wallet).</p></div>
+    <div class="step"><span class="num">2</span><b>People mint</b><p>Minters buy in at a fixed price. Paid mints are split LP 50 / creator 30 / dev 20 — the LP share funds the token's liquidity.</p></div>
+    <div class="step"><span class="num">3</span><b>Sold out → auto-launch</b><p>The token deploys, a Uniswap V4 market opens (two-sided if paid), and the LP is burned. No bonding curve, no waiting.</p></div>
+    <div class="step"><span class="num">4</span><b>Airdrop unlocks</b><p>10% of supply goes to minters, locked one month. The claim is attached to the NFT — whoever holds it claims.</p></div>
+    <div class="step"><span class="num">5</span><b>Fees feed the floor</b><p>Trades pay 2.5% each way, split creator 50 / NFT vault 30 / dev 20. The vault's ETH sets a floor per NFT — more trading, higher floor.</p></div>
+    <div class="step"><span class="num">6</span><b>Exit anytime</b><p>Sell the NFT (5% royalty) or redeem it to the floor (−3%). Redeeming burns the NFT and its unclaimed airdrop.</p></div>
+  </div>
+
+  <div class="cta-band" style="margin-top:30px">
+    <div><h2>Ready to launch?</h2><p class="muted">Create a collection and let it mint out.</p></div>
+    <a href="/launch" class="btn primary">Create a launch</a>
+  </div>
+</div></main>
+
+<footer class="site-foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <a class="brand-sm" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
+      <p class="muted">The launchpad for Robinhood Chain. Mint an NFT, launch a token, and keep the fees.</p>
+    </div>
+    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/how">How it works</a></div>
+    <div class="foot-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/faq">FAQ</a></div>
+    <div class="foot-col"><h4>Community</h4><a href="https://x.com/vesperpad" target="_blank" rel="noopener">X / Twitter</a></div>
+  </div>
+  <div class="wrap foot-bottom"><span class="muted">© 2026 Vesper</span><span class="muted">Robinhood Chain · Uniswap V4</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script src="/config.js"></script>
+<script src="/app.js?v=7"></script>
+</body>
+</html>
