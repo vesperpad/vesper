@@ -142,7 +142,7 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
     let list = ALL.filter(c => !q || (c.nm + " " + c.sy).toLowerCase().includes(q));
     if (filter === "nfts") list = list.filter(c => !c.fin);
     if (filter === "tokens") list = list.filter(c => c.fin);
-    if (sort === "floor") list.sort((a, b) => (b.floor > a.floor ? 1 : -1));
+    if (sort === "active") list.sort((a, b) => { const x = a.floor * BigInt(a.max), y = b.floor * BigInt(b.max); return y > x ? 1 : (y < x ? -1 : 0); });
     if (sort === "progress") list.sort((a, b) => (b.minted / b.max) - (a.minted / a.max));
     grid.innerHTML = list.map(card).join("") || `<p class="empty">Nothing here yet.</p>`;
   }
@@ -190,7 +190,7 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
   function setSortOptions() {
     const s = $("#sort"); if (!s) return;
     const opts = filter === "tokens"
-      ? [["new", "Newest"], ["floor", "Top floor"]]
+      ? [["new", "Newest"], ["active", "Most active"]]
       : [["new", "Newest"], ["progress", "Almost sold out"]];
     s.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
     sort = "new";
