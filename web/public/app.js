@@ -187,10 +187,20 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
       ).join("") : `<li class="cmut">No activity yet.</li>`;
     } catch {}
   }
+  function setSortOptions() {
+    const s = $("#sort"); if (!s) return;
+    const opts = filter === "tokens"
+      ? [["new", "Newest"], ["floor", "Top floor"]]
+      : [["new", "Newest"], ["progress", "Almost sold out"]];
+    s.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+    sort = "new";
+  }
+  setSortOptions();
   ["nfts", "tokens"].forEach(k => { const b = $("#tab-" + k); if (b) b.onclick = () => {
     filter = k;
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("on")); b.classList.add("on");
     if ($("#search")) $("#search").placeholder = k === "nfts" ? "Search collections" : "Search tokens";
+    setSortOptions();
     render();
   }; });
   if ($("#sort")) $("#sort").onchange = e => { sort = e.target.value; render(); };
