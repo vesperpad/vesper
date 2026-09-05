@@ -1,32 +1,58 @@
 const C = window.VESPER;
 const $ = s => document.querySelector(s);
 const qs = k => new URLSearchParams(location.search).get(k);
-let provider, signer, account;
+let provider, signer, account, eip1193, wc;
+const WC_PROJECT_ID = "6f586a16df07e60c9b57f3cbc290f516"; // WalletConnect project id (shared, origin-open)
 
-// ---------- wallet ----------
+// ---------- wallet: injected first, else WalletConnect (QR) ----------
 async function connect() {
-  if (!window.ethereum) { alert("Install a wallet (MetaMask) first."); return null; }
-  provider = new ethers.BrowserProvider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  await ensureChain();
-  signer = await provider.getSigner();
-  account = await signer.getAddress();
-  document.querySelectorAll("[data-connect]").forEach(b => b.textContent = short(account));
-  return account;
+  try {
+    if (window.ethereum) {
+      eip1193 = window.ethereum;
+      await eip1193.request({ method: "eth_requestAccounts" });
+    } else {
+      const { EthereumProvider } = await import("https://esm.sh/@walletconnect/ethereum-provider@2.17.0");
+      wc = await EthereumProvider.init({
+        projectId: WC_PROJECT_ID,
+        chains: [C.chain.id],
+        optionalChains: [C.chain.id, 1],
+        rpcMap: { [C.chain.id]: C.chain.rpc },
+        showQrModal: true,
+        metadata: {
+          name: "Vesper",
+          description: "The launchpad for Robinhood Chain",
+          url: "https://vesperpad.world",
+          icons: ["https://vesperpad.world/vesper-icon.png"]
+        }
+      });
+      await wc.connect(); // opens the QR / wallet picker
+      eip1193 = wc;
+    }
+    provider = new ethers.BrowserProvider(eip1193);
+    await ensureChain();
+    signer = await provider.getSigner();
+    account = await signer.getAddress();
+    document.querySelectorAll("[data-connect]").forEach(b => b.textContent = short(account));
+    return account;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
 }
 async function ensureChain() {
-  const net = await provider.getNetwork();
-  if (Number(net.chainId) === C.chain.id) return;
-  try { await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: C.chain.hex }] }); }
-  catch (e) {
-    if (e.code === 4902) {
-      await window.ethereum.request({ method: "wallet_addEthereumChain", params: [{
+  try {
+    const net = await provider.getNetwork();
+    if (Number(net.chainId) === C.chain.id) return;
+    await eip1193.request({ method: "wallet_switchEthereumChain", params: [{ chainId: C.chain.hex }] });
+  } catch (e) {
+    if (e && e.code === 4902) {
+      await eip1193.request({ method: "wallet_addEthereumChain", params: [{
         chainId: C.chain.hex, chainName: C.chain.name,
         nativeCurrency: { name: C.chain.symbol, symbol: C.chain.symbol, decimals: 18 }, rpcUrls: [C.chain.rpc]
       }] });
-    } else throw e;
+    }
   }
-  provider = new ethers.BrowserProvider(window.ethereum);
+  provider = new ethers.BrowserProvider(eip1193);
 }
 document.querySelectorAll("[data-connect]").forEach(b => b.onclick = connect);
 
@@ -55,6 +81,22 @@ async function addToWallet(token, sym, img) {
   try {
     await window.ethereum.request({ method: "wallet_watchAsset", params: { type: "ERC20", options: { address: token, symbol: (sym || "TKN").slice(0, 11), decimals: 18, image: img || "" } } });
   } catch {}
+}
+
+// unified write: routes through the browser wallet, or the VPS wallet (server signs)
+const IFACE = {
+  factory: new ethers.Interface(C.factoryAbi),
+  nft: new ethers.Interface(C.nftAbi),
+  vault: new ethers.Interface(C.vaultAbi),
+  airdrop: new ethers.Interface(C.airdropAbi)
+};
+async function sendTx(kind, to, method, args, value = 0n) {
+  if (!signer) await connect();
+  if (!signer) throw new Error("Wallet not connected");
+  const data = IFACE[kind].encodeFunctionData(method, args);
+  const tx = await signer.sendTransaction({ to, data, value });
+  const rc = await tx.wait();
+  return { hash: tx.hash, logs: rc.logs };
 }
 
 // combined summary for one collection
@@ -103,17 +145,16 @@ if ($("#launchForm")) {
     if (!C.FACTORY) { msg("Launching soon. The contract goes live shortly.", ""); return; }
     try {
       btn.disabled = true;
-      if (!signer) await connect();
+      if (!account) await connect();
+      if (!account) { msg("Connect a wallet first.", "err"); btn.disabled = false; return; }
       msg("Uploading metadata…", "");
       const image = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(logo); });
       const up = await fetch("/api/upload", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, symbol, image, description: $("#f-desc").value.trim(), twitter: $("#f-twitter").value.trim(), website: $("#f-website").value.trim() }) }).then(r => r.json());
       if (up.error) throw new Error(up.error);
-      msg("Confirm in your wallet…", "");
-      const f = factory(signer);
-      const tx = await f.createLaunch(name, symbol, up.contractURI, nftName, nftSymbol, supply, ethers.parseEther(priceStr));
-      const rc = await tx.wait();
+      msg("Signing the launch…", "");
+      const r = await sendTx("factory", C.FACTORY, "createLaunch", [name, symbol, up.contractURI, nftName, nftSymbol, supply, ethers.parseEther(priceStr)]);
       let nftAddr = "";
-      for (const lg of rc.logs) { try { const p = f.interface.parseLog(lg); if (p && p.name === "LaunchCreated") { nftAddr = p.args[0]; break; } } catch {} }
+      for (const lg of r.logs) { try { const p = IFACE.factory.parseLog(lg); if (p && p.name === "LaunchCreated") { nftAddr = p.args[0]; break; } } catch {} }
       msg("Live! Redirecting to your mint page…", "ok");
       location.href = nftAddr ? ("/collection?a=" + nftAddr) : "/explore";
     } catch (err) { msg(err.shortMessage || err.message || "Failed.", "err"); btn.disabled = false; }
@@ -270,8 +311,8 @@ if ($("#collection")) {
       if (!s.fin) {
         $("#mintBtn").onclick = async () => {
           const m = $("#mMsg");
-          try { if (!signer) await connect(); m.textContent = "Confirm in your wallet…"; m.className = "msg";
-            const tx = await nftC(a2, signer).mint({ value: s.price }); m.textContent = "Minting…"; await tx.wait();
+          try { if (!account) await connect(); m.textContent = "Minting…"; m.className = "msg";
+            await sendTx("nft", a2, "mint", [], s.price);
             m.textContent = "Minted!"; m.className = "msg ok"; setTimeout(() => renderCol(a2), 1200);
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
@@ -290,9 +331,9 @@ if ($("#collection")) {
         };
         const run = async which => {
           const m = $("#mMsg"); if (picked == null) { m.textContent = "Pick your NFT first."; m.className = "msg err"; return; }
-          try { if (!signer) await connect(); m.textContent = "Confirm in your wallet…"; m.className = "msg";
-            const ct = which === "claim" ? new ethers.Contract(s.airdrop, C.airdropAbi, signer) : new ethers.Contract(s.vault, C.vaultAbi, signer);
-            const tx = which === "claim" ? await ct.claim(picked) : await ct.redeem(picked); m.textContent = "Processing…"; await tx.wait();
+          try { if (!account) await connect(); m.textContent = "Processing…"; m.className = "msg";
+            if (which === "claim") await sendTx("airdrop", s.airdrop, "claim", [picked]);
+            else await sendTx("vault", s.vault, "redeem", [picked]);
             m.textContent = which === "claim" ? "Airdrop claimed!" : "Redeemed!"; m.className = "msg ok";
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
