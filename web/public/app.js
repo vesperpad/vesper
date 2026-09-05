@@ -147,14 +147,21 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
     grid.innerHTML = list.map(card).join("") || `<p class="empty">Nothing here yet.</p>`;
   }
   function card(c) {
-    const status = c.fin
-      ? `<span class="pill live">Live</span>`
-      : `<span class="pill mint">${c.minted}/${c.max}</span>`;
-    const sub = c.fin ? `floor ${eth(c.floor)} ETH` : `${Math.round(c.minted / c.max * 100)}% minted`;
+    if (!c.fin) {
+      // NFT (minting) card: progress + mint price
+      const pct = Math.round(c.minted / c.max * 100);
+      const price = c.price == 0n ? "Free" : eth(c.price) + " ETH";
+      return `<a class="tok" href="/collection?a=${c.a}">
+        <img src="${c.img || "/logo-placeholder.svg"}" onerror="this.src='/logo-placeholder.svg'"/>
+        <div><div class="nm">${esc(c.nm)}</div><div class="sy">NFT · mint ${price}</div></div>
+        <div class="cbar"><div style="width:${pct}%"></div></div>
+        <div class="tok-foot"><span class="cmut">${c.minted}/${c.max} minted</span><span class="pill mint">Minting</span></div></a>`;
+    }
+    // Token (live) card: floor + tradable
     return `<a class="tok" href="/collection?a=${c.a}">
       <img src="${c.img || "/logo-placeholder.svg"}" onerror="this.src='/logo-placeholder.svg'"/>
-      <div><div class="nm">${esc(c.nm)}</div><div class="sy">$${esc(c.sy)}</div></div>
-      <div class="tok-foot"><span class="cmut">${sub}</span>${status}</div></a>`;
+      <div><div class="nm">${esc(c.nm)}</div><div class="sy">$${esc(c.sy)} · token</div></div>
+      <div class="tok-foot"><span class="cmut">floor ${eth(c.floor)} ETH</span><span class="pill live">Live</span></div></a>`;
   }
   function renderStats(list) {
     const el = $("#exStats"); if (!el) return;
@@ -180,7 +187,12 @@ if ($("#grid") && !$("#collection") && !$("#portfolio")) {
       ).join("") : `<li class="cmut">No activity yet.</li>`;
     } catch {}
   }
-  ["nfts", "tokens"].forEach(k => { const b = $("#tab-" + k); if (b) b.onclick = () => { filter = k; document.querySelectorAll(".tab").forEach(t => t.classList.remove("on")); b.classList.add("on"); render(); }; });
+  ["nfts", "tokens"].forEach(k => { const b = $("#tab-" + k); if (b) b.onclick = () => {
+    filter = k;
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("on")); b.classList.add("on");
+    if ($("#search")) $("#search").placeholder = k === "nfts" ? "Search collections" : "Search tokens";
+    render();
+  }; });
   if ($("#sort")) $("#sort").onchange = e => { sort = e.target.value; render(); };
   if ($("#search")) $("#search").addEventListener("input", render);
   if ($("#refresh")) $("#refresh").onclick = load;

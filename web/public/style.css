@@ -256,3 +256,7 @@ a.tok{color:inherit}
 /* ---------- portfolio ---------- */
 .pf-sec{margin-top:30px}
 .pf-sec h2{font-family:var(--serif);font-weight:600;font-size:24px;color:#fdf6ea;margin:0 0 14px}
+
+/* mini progress bar on NFT (minting) cards in Explore */
+.cbar{height:5px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);overflow:hidden;margin:2px 0 2px}
+.cbar>div{height:100%;background:linear-gradient(90deg,var(--gold2),var(--gold))}
