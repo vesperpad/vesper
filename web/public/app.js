@@ -466,14 +466,15 @@ if ($("#collection")) {
             <li><span>NFT floor</span><b>${eth(s.floor)} ETH</b></li>
           </ul>
           <button id="addBtn" class="btn ghost full">Add token to wallet</button>
-          <div class="mini">Your NFT<div id="ownedWrap"><button id="loadOwned" class="btn ghost sm">Show my NFTs</button></div></div>
+          <div class="mini">Your NFT<div id="ownedWrap"><span class="cmut">connect wallet to manage your NFTs</span></div></div>
           <div class="row2">
             <button id="claimBtn" class="btn ghost full" disabled>Claim airdrop</button>
-            <button id="redeemBtn" class="btn ghost full" disabled>Sell NFT → floor</button>
+            <button id="redeemBtn" class="btn ghost full" disabled>Sell to floor (${eth(s.floor)} ETH)</button>
           </div>
+          <p class="cmut" style="font-size:12px;margin:-4px 2px 4px">Sell to floor is instant and needs no price. To sell to a buyer at your own price, set a price below.</p>
           <div class="row2">
             <input id="listPrice" class="input" type="number" min="0" step="0.001" placeholder="list price ETH" />
-            <button id="listBtn" class="btn ghost full" disabled>Sell NFT to a buyer</button>
+            <button id="listBtn" class="btn ghost full" disabled>Sell to a buyer</button>
           </div>
           <p id="mMsg" class="msg"></p>
           <p class="form-sec" style="margin-top:14px">For sale</p>
@@ -555,22 +556,27 @@ if ($("#collection")) {
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
         let picked = null;
-        const setPicked = id => { picked = id; $("#claimBtn").disabled = false; $("#redeemBtn").disabled = false; $("#listBtn").disabled = false; };
-        $("#loadOwned").onclick = async () => {
-          if (!signer) await connect();
+        const setPicked = id => { picked = id; const en = id != null; $("#claimBtn").disabled = !en; $("#redeemBtn").disabled = !en; $("#listBtn").disabled = !en; };
+        // auto-load the NFTs this wallet holds so Sell/Claim work without an extra step
+        const refreshOwned = async () => {
+          const wrap = $("#ownedWrap"); if (!wrap) return;
+          if (!account) { wrap.innerHTML = `<button id="ownedConnect" class="btn ghost sm">Connect wallet</button>`; const b = $("#ownedConnect"); if (b) b.onclick = async () => { await connect(); refreshOwned(); }; setPicked(null); return; }
+          wrap.innerHTML = `<span class="cmut">Loading your NFTs…</span>`;
           const ids = await ownedIds(a2);
-          const wrap = $("#ownedWrap");
-          if (!ids.length) { wrap.innerHTML = `<span class="cmut">You hold no NFTs from this collection.</span>`; return; }
+          if (!ids.length) { wrap.innerHTML = `<span class="cmut">You hold no NFTs from this collection.</span>`; setPicked(null); return; }
           wrap.innerHTML = `<select id="idSel" class="input">${ids.map(i => `<option value="${i}">#${i}</option>`).join("")}</select>`;
           setPicked(ids[0]);
           $("#idSel").onchange = e => setPicked(Number(e.target.value));
         };
+        refreshOwned();
+        document.addEventListener("wallet:changed", refreshOwned);
         const run = async which => {
           const m = $("#mMsg"); if (picked == null) { m.textContent = "Pick your NFT first."; m.className = "msg err"; return; }
           try { if (!account) await connect(); m.textContent = "Processing…"; m.className = "msg";
             if (which === "claim") await sendTx("airdrop", s.airdrop, "claim", [picked]);
             else await sendTx("vault", s.vault, "redeem", [picked]);
-            m.textContent = which === "claim" ? "Airdrop claimed!" : "Redeemed!"; m.className = "msg ok";
+            m.textContent = which === "claim" ? "Airdrop claimed! Tokens are in your wallet." : "Sold to floor! ETH is in your wallet."; m.className = "msg ok";
+            setTimeout(refreshOwned, 1500);
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
         $("#claimBtn").onclick = () => run("claim");
@@ -582,7 +588,7 @@ if ($("#collection")) {
           if (!p || Number(p) <= 0) { m.textContent = "Enter a list price."; m.className = "msg err"; return; }
           try { if (!signer) await connect(); m.textContent = "Approving + listing…"; m.className = "msg";
             await listNFT(a2, picked, p);
-            m.textContent = "Listed for sale!"; m.className = "msg ok"; loadMarket();
+            m.textContent = "Listed for sale!"; m.className = "msg ok"; loadMarket(); setTimeout(refreshOwned, 1500);
           } catch (e) { m.textContent = e.shortMessage || e.message; m.className = "msg err"; }
         };
         // listings for sale (buy from other holders)
