@@ -10,3 +10,12 @@ web/data/
 .env
 *.key
 *.pem
+
+# X post / marketing assets (kept off the public repo)
+web/assets-x/
+web/public/vesper-announce*.png
+web/public/vesper-banner.png
+web/public/vesper-logo.png
+web/public/vesper-wordmark.png
+web/public/vesper-post1.*
+web/public/vesper-teaser.*
