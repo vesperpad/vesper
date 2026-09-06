@@ -282,3 +282,19 @@ a.tok{color:inherit}
 /* marketplace listings */
 #market .listing{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
 #market .listing b{color:var(--gold2)}
+
+/* ---------- coming soon ---------- */
+body.soon{min-height:100vh;background:
+  radial-gradient(1200px 600px at 50% -10%, rgba(230,192,105,.10), transparent 60%),
+  radial-gradient(900px 500px at 50% 8%, rgba(150,60,90,.20), transparent 55%),
+  var(--bg);}
+.soon-wrap{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px 22px;overflow:hidden}
+.soon-inner{position:relative;z-index:2;max-width:640px}
+.soon-glow{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);width:560px;height:560px;background:radial-gradient(circle,rgba(230,192,105,.18),transparent 62%);filter:blur(30px);z-index:1;pointer-events:none}
+.soon-inner{text-align:center}
+.soon-star{display:block;width:88px;height:88px;object-fit:contain;margin:18px auto 2px;filter:drop-shadow(0 0 30px #e6c069bb)}
+.soon-inner h1{font-family:var(--serif);font-weight:800;font-size:clamp(60px,14vw,120px);line-height:.9;margin:0;color:#fdf6ea}
+.soon-sub{max-width:520px;margin:22px auto 0;color:#ece1dc;font-size:17px;line-height:1.6}
+.soon-tag{margin:26px 0 6px;font-family:var(--serif);font-size:22px;color:var(--gold2);font-weight:600;letter-spacing:.04em}
+.soon .cta{display:flex;justify-content:center;margin-top:14px}
+.soon-foot{margin-top:36px;color:var(--faint);font-size:12.5px}

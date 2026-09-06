@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vesper — the launchpad for Robinhood Chain</title>
+<meta name="description" content="Mint an NFT, launch a token. When a collection mints out, its token auto-launches with locked Uniswap liquidity. Minters get a locked airdrop, and trade fees keep lifting the NFT floor." />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<meta property="og:title" content="Vesper — the launchpad for Robinhood Chain" />
+<meta property="og:description" content="Mint an NFT, launch a token. Locked liquidity, minter airdrops, and a fee-backed NFT floor." />
+<meta property="og:image" content="/og.png" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="/og.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="/style.css?v=20" />
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
+  <nav class="nav-links">
+    <a href="/home" class="active">Home</a>
+    <a href="/explore">Explore</a><a href="/market">Market</a>
+    <a href="/launch">Launch</a>
+    <a href="/portfolio">Portfolio</a>
+  </nav>
+  <button class="btn primary sm" data-connect>Connect wallet</button>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="badge"><i></i> Live on Robinhood Chain</span>
+      <img src="/star.png" alt="" class="hero-star" />
+      <h1>Vesper</h1>
+      <p class="kicker">THE LAUNCHPAD FOR ROBINHOOD CHAIN</p>
+      <p class="sub">A token launch that starts as an NFT mint. Sell out the collection and the token goes live with locked liquidity.</p>
+      <div class="cta">
+        <a href="/launch" class="btn primary">Create a launch</a>
+        <a href="/explore" class="btn ghost">Explore collections</a>
+      </div>
+    </div>
+    <div class="hero-fade"></div>
+  </section>
+
+  <div class="wrap">
+    <section class="stats three">
+      <div><b>NFT-gated</b><span>Mint first, then launch</span></div>
+      <div><b>Locked</b><span>Liquidity burned at launch</span></div>
+      <div><b>Uniswap V4</b><span>Live market on day one</span></div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head center"><div>
+        <p class="eyebrow">How it works</p>
+        <h2>Mint the NFT, the token launches itself</h2>
+      </div></div>
+      <div class="steps">
+        <div class="step"><span class="num">1</span><b>Create</b><p>Set up an NFT collection for your token. Choose the supply and a free or paid mint.</p></div>
+        <div class="step"><span class="num">2</span><b>Mint</b><p>People mint, one per wallet. A paid mint funds the token's liquidity.</p></div>
+        <div class="step"><span class="num">3</span><b>Launch</b><p>When the collection sells out, the token goes live on Uniswap and the liquidity is locked.</p></div>
+        <div class="step"><span class="num">4</span><b>Earn</b><p>Minters get a locked airdrop, and trade fees feed the NFT floor.</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sec-head center"><div>
+        <p class="eyebrow">Transparency</p>
+        <h2>Built so you don't have to trust us</h2>
+      </div></div>
+      <div class="steps">
+        <div class="step"><span class="ic">✦</span><b>Liquidity is burned</b><p>Every launch sends its LP to the dead address. Nobody, us included, can ever pull it.</p></div>
+        <div class="step"><span class="ic">✦</span><b>No premine</b><p>Fixed 1B supply: 10% to minters (locked 1 month), 90% into the locked pool. No team bag.</p></div>
+        <div class="step"><span class="ic">✦</span><b>Open source</b><p>Every contract is public on <a href="https://github.com/vesperpad/vesper" target="_blank" rel="noopener">GitHub</a>. Read it, verify it.</p></div>
+        <div class="step"><span class="ic">✦</span><b>Same code for all</b><p>One shared factory and fee hook power every token, so there's nothing custom hiding in your launch.</p></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <p class="eyebrow">On-chain contracts · Robinhood Chain</p>
+        <ul class="pv-facts">
+          <li><span>Factory</span><b class="mono" data-copy="0x6f1914E5936077d47E5682d3D4662fD168d452Ae">0x6f1914…d452Ae</b></li>
+          <li><span>Fee hook</span><b class="mono" data-copy="0x3872A66a82B7c6e98a795AdDB7A92D9898a140cC">0x3872A6…a140cC</b></li>
+          <li><span>Marketplace</span><b class="mono" data-copy="0x79dae07308e70c6Ce649D1dd9bD650249A1A0AA0">0x79dae0…1A0AA0</b></li>
+          <li><span>Swap router</span><b class="mono" data-copy="0x569e99E9E8C09C4940a0407aD4E3d8ef90B6d51F">0x569e99…B6d51F</b></li>
+        </ul>
+        <p class="muted" style="font-size:12.5px;margin:6px 0 0">Tap to copy. Verify against the source on GitHub or query them on any Robinhood Chain RPC.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="cta-band">
+        <div><h2>Ready to launch?</h2><p class="muted">Create a collection. The token goes live when it mints out.</p></div>
+        <a href="/launch" class="btn primary">Create a launch</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <a class="brand-sm" href="/"><img src="/star.png" alt="" class="brand-star"/> Vesper</a>
+      <p class="muted">The launchpad for Robinhood Chain. Mint an NFT, launch a token, and keep the fees.</p>
+    </div>
+    <div class="foot-col"><h4>Product</h4><a href="/launch">Launch</a><a href="/explore">Explore</a><a href="/market">Market</a><a href="/portfolio">Portfolio</a><a href="/how">How it works</a></div>
+    <div class="foot-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/faq">FAQ</a></div>
+    <div class="foot-col"><h4>Community</h4><a href="https://x.com/vesperpad" target="_blank" rel="noopener">X / Twitter</a><a href="https://github.com/vesperpad/vesper" target="_blank" rel="noopener">GitHub</a></div>
+  </div>
+  <div class="wrap foot-note"><p class="muted">Vesper is non-custodial: every action is a transaction from your own wallet, and we never hold your keys or your funds. Tokens can be volatile and can lose all their value. Nothing here is financial advice.</p></div>
+  <div class="wrap foot-bottom"><span class="muted">© 2026 Vesper</span><span class="muted">Robinhood Chain · Uniswap V4</span></div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script src="/config.js"></script>
+<script src="/app.js?v=20"></script>
+</body>
+</html>
