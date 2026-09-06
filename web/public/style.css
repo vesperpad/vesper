@@ -186,7 +186,9 @@ footer{margin-top:80px;border-top:1px solid var(--line);padding:26px 0}
 .foot-col h4{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 12px;font-weight:600}
 .foot-col a{display:block;color:var(--mut);font-size:14px;margin-bottom:9px;transition:.15s}
 .foot-col a:hover{color:var(--gold2)}
-.foot-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:34px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;flex-wrap:wrap;gap:8px}
+.foot-note{margin-top:30px;padding-top:20px;border-top:1px solid var(--line)}
+.foot-note p{font-size:12.5px;line-height:1.6;max-width:900px;margin:0}
+.foot-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;flex-wrap:wrap;gap:8px}
 
 /* ---------- responsive ---------- */
 @media(max-width:820px){
